@@ -1,0 +1,257 @@
+<UserControl x:Class="DiagKit.Views.ReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DiagKit.ViewModels"
+             xmlns:views="clr-namespace:DiagKit.Views"
+             xmlns:report="clr-namespace:DiagKit.Report"
+             xmlns:ctl="clr-namespace:DiagKit.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <StackPanel Margin="32,26,32,44" MaxWidth="1000" HorizontalAlignment="Left">
+
+            <!-- Verdict: the first and largest thing on the page -->
+            <TextBlock Text="{Binding MachineLine}" FontFamily="{StaticResource Font.Display}" FontSize="13" Foreground="{StaticResource Muted}" />
+            <DockPanel Margin="0,12,0,0">
+                <ctl:Led DockPanel.Dock="Left" State="{Binding VerdictLed}" Width="30" Height="30" Padding="8" Margin="-8,0,10,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Verdict}" Style="{StaticResource Text.Verdict}" VerticalAlignment="Center" />
+            </DockPanel>
+            <TextBlock Text="{Binding VerdictDetail}" Style="{StaticResource Text.Lede}" Margin="0,8,0,0" />
+
+            <ItemsControl ItemsSource="{Binding Tally}" Margin="0,18,0,0" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:TallyItem}">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,30,6">
+                            <ctl:Led State="{Binding Led}" Margin="0,0,6,0" />
+                            <TextBlock Text="{Binding Count}" FontFamily="{StaticResource Font.Display}" FontSize="21" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Label}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="7,2,0,0" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <WrapPanel Margin="0,16,0,0">
+                <Button Style="{StaticResource Button.Primary}" Command="{Binding OpenHtmlCommand}" Margin="0,0,8,8"
+                        ToolTip="Opens the self-contained HTML version in your browser. Send that one file to share the report.">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE8A7;" FontSize="12" Margin="0,0,9,0" />
+                        <TextBlock Text="Open HTML report" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource Button.Secondary}" Command="{Binding OpenFolderCommand}" Margin="0,0,8,8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE838;" FontSize="12" Margin="0,0,9,0" />
+                        <TextBlock Text="Report folder" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource Button.Secondary}" Margin="0,0,8,8"
+                        Command="{Binding DataContext.NewCheckCommand, RelativeSource={RelativeSource AncestorType={x:Type views:HealthView}}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE72C;" FontSize="12" Margin="0,0,9,0" />
+                        <TextBlock Text="New check" />
+                    </StackPanel>
+                </Button>
+                <TextBlock Text="{Binding StampText}" Style="{StaticResource Text.Faint}" VerticalAlignment="Center" Margin="8,0,0,8" />
+            </WrapPanel>
+
+            <!-- Findings -->
+            <DockPanel Margin="0,26,0,12">
+                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding ExpandAllCommand}" Content="Expand or collapse all" />
+                <TextBlock Text="Findings" Style="{StaticResource Text.Section}" Margin="0" VerticalAlignment="Center" />
+            </DockPanel>
+            <ItemsControl ItemsSource="{Binding Findings}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:FindingViewModel}">
+                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,8">
+                            <Grid>
+                                <Border x:Name="Edge" Width="3" HorizontalAlignment="Left" CornerRadius="6,0,0,6" Background="Transparent" />
+                                <StackPanel>
+                                    <ToggleButton Style="{StaticResource FindingHeader}" IsChecked="{Binding IsExpanded, Mode=TwoWay}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="26" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ctl:Led State="{Binding Led}" HorizontalAlignment="Left" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Category}" Style="{StaticResource Text.Faint}" Margin="16,0" VerticalAlignment="Center" />
+                                            <TextBlock x:Name="Chevron" Grid.Column="3" Style="{StaticResource Text.Glyph}" Text="&#xE70D;" FontSize="11"
+                                                       Foreground="{StaticResource Faint}" />
+                                        </Grid>
+                                    </ToggleButton>
+                                    <StackPanel Margin="40,0,24,16" Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{StaticResource Muted}" LineHeight="20"
+                                                   MaxWidth="760" HorizontalAlignment="Left" />
+                                        <StackPanel Margin="0,12,0,0" Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="What to do" FontFamily="{StaticResource Font.Display}" FontWeight="SemiBold" FontSize="12.5"
+                                                       Foreground="{StaticResource Muted}" />
+                                            <TextBlock Text="{Binding Action}" TextWrapping="Wrap" Margin="0,3,0,0" LineHeight="20" MaxWidth="760" HorizontalAlignment="Left" />
+                                        </StackPanel>
+                                        <Border Margin="0,12,0,0" Background="{StaticResource Bg}" CornerRadius="4" Padding="12,7"
+                                                Visibility="{Binding HasEvidence, Converter={StaticResource BoolToVis}}">
+                                            <ItemsControl ItemsSource="{Binding Evidence}" Focusable="False">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" Style="{StaticResource Text.Muted}" Margin="0,3" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Severity}" Value="{x:Static report:Severity.Critical}">
+                                <Setter TargetName="Edge" Property="Background" Value="{StaticResource Led.Critical}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Severity}" Value="{x:Static report:Severity.Warning}">
+                                <Setter TargetName="Edge" Property="Background" Value="{StaticResource Led.Warning}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                <Setter TargetName="Chevron" Property="Text" Value="&#xE70E;" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="No findings were produced. See how the check ran, below." Style="{StaticResource Text.Muted}"
+                       Visibility="{Binding HasFindings, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+
+            <!-- Readings -->
+            <StackPanel Visibility="{Binding HasReadings, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Readings" Style="{StaticResource Text.Section}" />
+                <ItemsControl ItemsSource="{Binding Readings}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ReadingViewModel}">
+                            <Border Width="178" Margin="0,0,8,8" Padding="16,14" Background="{StaticResource Surface}"
+                                    BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="Value" Text="{Binding Reading.Value}" Style="{StaticResource Text.Readout}" />
+                                        <TextBlock Text="{Binding Reading.Unit}" Foreground="{StaticResource Muted}" FontSize="13" VerticalAlignment="Bottom" Margin="5,0,0,4" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Reading.Label}" Style="{StaticResource Text.Muted}" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                                </StackPanel>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Reading.Severity}" Value="{x:Static report:Severity.Warning}">
+                                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource Led.Warning}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Reading.Severity}" Value="{x:Static report:Severity.Critical}">
+                                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource Led.Critical}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- Drives -->
+            <StackPanel Visibility="{Binding HasDrives, Converter={StaticResource BoolToVis}}" Grid.IsSharedSizeScope="True">
+                <TextBlock Text="Drives" Style="{StaticResource Text.Section}" />
+                <Grid Margin="0,0,0,6" TextElement.Foreground="{StaticResource Muted}" TextElement.FontSize="12.5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Kind" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Size" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Health" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Temp" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Hours" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Wear" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Drive" />
+                    <TextBlock Grid.Column="1" Text="Type" Margin="18,0,0,0" />
+                    <TextBlock Grid.Column="2" Text="Size" Margin="18,0,0,0" />
+                    <TextBlock Grid.Column="3" Text="Health" Margin="18,0,0,0" />
+                    <TextBlock Grid.Column="4" Text="Temp" Margin="18,0,0,0" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="5" Text="Powered on" Margin="18,0,0,0" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="6" Text="Wear" Margin="18,0,0,0" HorizontalAlignment="Right" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Drives}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:DriveRowViewModel}">
+                            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Kind" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Size" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Health" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Temp" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Hours" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Wear" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Row.Name}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Row.Kind}" Foreground="{StaticResource Muted}" Margin="18,0,0,0" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Row.Size}" Foreground="{StaticResource Muted}" Margin="18,0,0,0" />
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="12,0,0,0">
+                                        <ctl:Led State="{Binding Led}" Margin="0,0,4,0" />
+                                        <TextBlock Text="{Binding Row.Health}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="4" Text="{Binding Row.Temperature}" Margin="18,0,0,0" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="5" Text="{Binding Row.PowerOn}" Margin="18,0,0,0" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="6" Text="{Binding Row.Wear}" Margin="18,0,0,0" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- Spec sheet -->
+            <TextBlock Text="This PC" Style="{StaticResource Text.Section}" />
+            <ItemsControl ItemsSource="{Binding Overview}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type report:Fact}">
+                        <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,9">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="160" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource Muted}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Collection log -->
+            <TextBlock Text="How the check ran" Style="{StaticResource Text.Section}" />
+            <ItemsControl ItemsSource="{Binding Collectors}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:LedRow}">
+                        <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="26" />
+                                    <ColumnDefinition Width="190" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="60" />
+                                </Grid.ColumnDefinitions>
+                                <ctl:Led State="{Binding Led}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" />
+                                <TextBlock Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Text.Muted}" Margin="0,0,12,0" />
+                                <TextBlock Grid.Column="3" Text="{Binding Extra}" Style="{StaticResource Text.Faint}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Style="{StaticResource Text.Faint}" Margin="0,12,0,0"
+                       Text="Raw data from every step (SMART JSON, event summaries, tool output) is in the raw folder inside the report folder." />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

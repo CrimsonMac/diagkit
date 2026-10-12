@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>DiagKit</RootNamespace>
+    <AssemblyName>DiagKit</AssemblyName>
+    <Version>1.0.0</Version>
+    <Product>DiagKit</Product>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Program.Main wraps WPF startup so early failures are logged instead of silently killing the process. -->
+    <StartupObject>DiagKit.Program</StartupObject>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <PlatformTarget>x64</PlatformTarget>
+
+    <!-- Lets the project restore/build on non-Windows CI; harmless on Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- Startup and size: English-only satellite resources, no invariant globalization (dates matter). -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <TieredPGO>true</TieredPGO>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <PackageReference Include="System.Management" Version="10.0.*" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="10.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="tools.default.json" LogicalName="DiagKit.tools.default.json" />
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+</Project>

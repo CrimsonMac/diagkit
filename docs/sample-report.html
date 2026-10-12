@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DESKTOP-7Q2K: 3 problems need attention</title>
+<style>:root {
+  --bg: #171b21; --surface: #1e232b; --raised: #252b34; --line: #2f3642;
+  --text: #e7eaee; --muted: #8e97a4; --faint: #5f6876;
+  --critical: #ff5a5f; --warning: #ffb020; --info: #7fa7d9; --ok: #4ade80; --off: #3a424f;
+  --display: Bahnschrift, "DIN Alternate", "Barlow Semi Condensed", "Segoe UI", system-ui, sans-serif;
+  --body: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #eef1f4; --surface: #ffffff; --raised: #f5f7f9; --line: #d5dbe2;
+    --text: #1b2129; --muted: #5b6573; --faint: #8b95a3;
+    --critical: #d93036; --warning: #b77900; --info: #4a6fa5; --ok: #1f9d55; --off: #c3cad3;
+    color-scheme: light;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 var(--body); }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 19px; margin: 44px 0 14px; color: var(--text); }
+code { font-size: 0.92em; background: var(--raised); padding: 1px 5px; border-radius: 3px; }
+
+.led { --c: var(--off); display: inline-block; flex: none; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--c); margin-right: 10px; vertical-align: 1px; }
+.led[data-sev="critical"] { --c: var(--critical); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent), 0 0 12px var(--c); }
+.led[data-sev="warning"] { --c: var(--warning); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent), 0 0 10px var(--c); }
+.led[data-sev="info"] { --c: var(--info); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent); }
+.led[data-sev="ok"] { --c: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent); }
+
+.masthead { border-bottom: 1px solid var(--line); background: var(--surface); padding: 36px 0 28px; }
+.machine { margin: 0 0 18px; font-family: var(--display); font-size: 14px; color: var(--muted); }
+.machine span { margin-left: 12px; color: var(--faint); }
+.masthead h1 { display: flex; align-items: center; margin: 0; font-size: clamp(28px, 5vw, 42px); line-height: 1.1; }
+.masthead h1 .led { width: 14px; height: 14px; margin-right: 18px; }
+.lede { margin: 12px 0 22px; max-width: 62ch; color: var(--muted); font-size: 16px; }
+.tally { display: flex; flex-wrap: wrap; gap: 8px 28px; list-style: none; margin: 0; padding: 0; }
+.tally li { display: flex; align-items: center; color: var(--muted); }
+.tally b { font-family: var(--display); font-size: 22px; color: var(--text); margin-right: 7px; font-weight: 600; }
+.tally li.zero b { color: var(--faint); }
+.stamp { margin: 22px 0 0; font-size: 13px; color: var(--faint); }
+
+.finding { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 6px; margin-bottom: 8px; }
+.finding[data-sev="critical"] { border-left-color: var(--critical); }
+.finding[data-sev="warning"] { border-left-color: var(--warning); }
+.finding summary { display: flex; align-items: center; gap: 4px; padding: 13px 16px; cursor: pointer; list-style: none; }
+.finding summary::-webkit-details-marker { display: none; }
+.finding summary:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.finding .title { flex: 1; font-weight: 600; }
+.finding .cat { font-size: 13px; color: var(--faint); white-space: nowrap; }
+.finding .body { padding: 0 16px 16px 35px; color: var(--muted); max-width: 78ch; }
+.finding .body p { margin: 0 0 10px; }
+.finding .action { color: var(--text); }
+.finding .action b { display: block; font-family: var(--display); font-weight: 600; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+.evidence { margin: 10px 0 0; padding: 10px 14px; list-style: none; background: var(--raised); border-radius: 4px; font-size: 13.5px; }
+.evidence li { padding: 3px 0; overflow-wrap: anywhere; }
+.evidence li + li { border-top: 1px solid var(--line); }
+.empty { color: var(--muted); }
+
+.readings { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.reading { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; }
+.reading .value { font-family: var(--display); font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.reading .value small { font-size: 14px; color: var(--muted); margin-left: 4px; }
+.reading .label { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.reading[data-sev="warning"] .value { color: var(--warning); }
+.reading[data-sev="critical"] .value { color: var(--critical); }
+
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 600; font-size: 13px; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td .led { margin-right: 8px; }
+.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.spec { margin: 0; border-top: 1px solid var(--line); }
+.spec div { display: grid; grid-template-columns: 160px 1fr; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.spec dt { color: var(--muted); }
+.spec dd { margin: 0; overflow-wrap: anywhere; }
+
+.log td:first-child { white-space: nowrap; }
+.log td { color: var(--muted); }
+.note { font-size: 13px; color: var(--faint); margin: 14px 0 60px; }
+
+@media (max-width: 600px) {
+  .wrap { padding: 0 16px; }
+  .spec div { grid-template-columns: 1fr; gap: 2px; }
+  .finding .cat { display: none; }
+  .finding .body { padding-left: 16px; }
+}
+@media print {
+  .finding { break-inside: avoid; }
+  .finding:not([open]) .body { display: block; }
+}</style>
+</head>
+<body>
+<header class="masthead" data-sev="critical">
+<div class="wrap">
+<p class="machine">DESKTOP-7Q2K<span>Custom PC on ASUSTeK ROG STRIX B550-F GAMING</span></p>
+<h1><span class="led" data-sev="critical"></span>3 problems need attention</h1>
+<p class="lede">Start with the critical items at the top. There is also 1 smaller issue below them.</p>
+<ul class="tally"><li data-sev="critical"><span class="led" data-sev="critical"></span><b>3</b>critical</li><li data-sev="warning"><span class="led" data-sev="warning"></span><b>1</b>worth fixing</li><li data-sev="info"><span class="led" data-sev="info"></span><b>8</b>good to know</li><li data-sev="ok"><span class="led" data-sev="ok"></span><b>2</b>fine</li></ul>
+<p class="stamp">Checked 8 Oct 2026, 14:32 in 41 s with DiagKit 1.0.0</p>
+</div>
+</header>
+<main class="wrap">
+<section class="findings">
+<h2>Findings</h2>
+<details class="finding" data-sev="critical" open>
+<summary><span class="led" data-sev="critical"></span><span class="title">WDC WD20EZRZ-00Z5HB0 (D:) has 24 unreadable sectors</span><span class="cat">Drives</span></summary>
+<div class="body">
+<p>Parts of the drive could not be read back. Files stored there may already be damaged, and this count usually grows.</p>
+<p class="action"><b>What to do</b>Back up now and plan to replace the drive. A full surface scan (Victoria, or the drive maker&#39;s tool) shows how widespread it is.</p>
+<ul class="evidence"><li>HDD, SATA, 2 TB</li><li>Powered on for 31,877 hours (about 3.6 years of runtime)</li><li>Temperature now: 46 &#176;C</li><li>Reallocated sectors: 8</li><li>Pending sectors: 24</li><li>Uncorrectable sectors: 24</li><li>Full SMART data: raw\smartctl-dev_sdb.json</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="critical" open>
+<summary><span class="led" data-sev="critical"></span><span class="title">Windows logged 6 disk errors in the last 30 days</span><span class="cat">Drives</span></summary>
+<div class="body">
+<p>Some of these mean data could not be read or written, or the file system was damaged.</p>
+<p class="action"><b>What to do</b>Back up the affected drive, then run chkdsk /scan on it and check its SMART data above.</p>
+<ul class="evidence"><li>6&#215; Bad block on disk on WDC WD20EZRZ-00Z5HB0 (D:), last 2 Oct 2026</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="critical" open>
+<summary><span class="led" data-sev="critical"></span><span class="title">3 blue screens in the last 30 days</span><span class="cat">Crashes</span></summary>
+<div class="body">
+<p>Most common: WHEA_UNCORRECTABLE_ERROR. The hardware itself reported a fatal error: CPU, RAM, or PCIe. Undo overclocks and undervolts first. The dumps name the Windows kernel, which is expected for this kind of crash: the error came from the hardware, not a driver.</p>
+<p class="action"><b>What to do</b>Undo CPU overclocks and undervolts, check temperatures under load, and update the BIOS (it carries CPU microcode fixes).</p>
+<ul class="evidence"><li>6 Oct 2026, 21:14: WHEA_UNCORRECTABLE_ERROR (0x124), ntoskrnl.exe</li><li>30 Sep 2026, 19:02: WHEA_UNCORRECTABLE_ERROR (0x124), ntoskrnl.exe</li><li>21 Sep 2026, 23:40: WHEA_UNCORRECTABLE_ERROR (0x124), ntoskrnl.exe</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="warning" open>
+<summary><span class="led" data-sev="warning"></span><span class="title">14 corrected CPU or memory errors</span><span class="cat">Hardware errors</span></summary>
+<div class="body">
+<p>The hardware caught and fixed errors on its own. A healthy PC at stock settings logs none; they usually mean an overclock or undervolt is right at the edge of stability, or a part is starting to fail.</p>
+<p class="action"><b>What to do</b>Back off any CPU/RAM overclock or undervolt. Run TestMem5 and a CPU stress test to see if errors appear.</p>
+<ul class="evidence"><li>14&#215; Corrected CPU machine-check error, last 6 Oct 2026</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">WDC WD20EZRZ-00Z5HB0 (D:) has 3 connection errors</span><span class="cat">Drives</span></summary>
+<div class="body">
+<p>Data got corrupted between the drive and the motherboard and had to be resent. This counter never resets, so it may be from the past.</p>
+<p class="action"><b>What to do</b>If it keeps rising, replace the SATA cable or try another port.</p>
+<ul class="evidence"><li>HDD, SATA, 2 TB</li><li>Powered on for 31,877 hours (about 3.6 years of runtime)</li><li>Temperature now: 46 &#176;C</li><li>Reallocated sectors: 8</li><li>Pending sectors: 24</li><li>Uncorrectable sectors: 24</li><li>Full SMART data: raw\smartctl-dev_sdb.json</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">CPU runs very hot under full load (90 &#176;C)</span><span class="cat">Temperatures</span></summary>
+<div class="body">
+<p>Recent Ryzen and Intel desktop chips boost until they reach roughly 90 to 95 &#176;C by design, so this can be normal. On older CPUs or laptops it suggests the cooling is struggling.</p>
+<ul class="evidence"><li>30 s on 16 threads</li><li>Peak CPU temperature: 90 &#176;C</li><li>Average clock: 4.65 GHz at the start, 4.48 GHz at the end (sensors)</li><li>Peak CPU power: 128 W</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">RAM may be running below its kit speed (2133 vs 3600 MT/s)</span><span class="cat">Memory</span></summary>
+<div class="body">
+<p>The part number suggests a 3600 MT/s kit, but it runs at 2133 MT/s. Kit speeds need XMP/EXPO enabled.</p>
+<p class="action"><b>What to do</b>Enable XMP (Intel) or EXPO/DOCP (AMD) in the BIOS. It is a supported setting and free performance. If the PC was unstable with it on, leave it off.</p>
+<ul class="evidence"><li>DIMM_A2: 16 GB DDR4 G.Skill F4-3600C16-16GVKC, rated 2133 MT/s, running 2133 MT/s</li><li>DIMM_B2: 16 GB DDR4 G.Skill F4-3600C16-16GVKC, rated 2133 MT/s, running 2133 MT/s</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">Windows 11 24H2 support ends 13 Oct 2026</span><span class="cat">Windows</span></summary>
+<div class="body">
+<p>After that date this version stops receiving security updates.</p>
+<p class="action"><b>What to do</b>Install the latest feature update through Windows Update.</p>
+<ul class="evidence"><li>Windows 11 Pro 24H2 (build 26100.4652), support ends 13 Oct 2026</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">Not restarted in 28 days</span><span class="cat">Windows</span></summary>
+<div class="body">
+<p>With Fast Startup, shutting down does not reset Windows; only Restart does. Pending updates and driver fixes wait for a restart.</p>
+<p class="action"><b>What to do</b>Restart (not shut down) before testing further.</p>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">BIOS is from 2020</span><span class="cat">Windows</span></summary>
+<div class="body">
+<p>BIOS updates fix memory compatibility, stability and security problems, and carry CPU microcode fixes.</p>
+<p class="action"><b>What to do</b>Check the motherboard or PC maker&#39;s support page for a newer version and follow their update instructions exactly.</p>
+<ul class="evidence"><li>ASUSTeK ROG STRIX B550-F GAMING, BIOS 1401 from 1 Sep 2020</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">Graphics driver is 26 months old</span><span class="cat">Windows</span></summary>
+<div class="body">
+<p>NVIDIA GeForce RTX 3070 uses a driver from 1 Aug 2024. Newer drivers fix crashes and game issues.</p>
+<p class="action"><b>What to do</b>Install the latest driver from NVIDIA, AMD or Intel (or the laptop maker for hybrid graphics).</p>
+<ul class="evidence"><li>NVIDIA GeForce RTX 3070, driver 32.0.15.6094</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="info">
+<summary><span class="led" data-sev="info"></span><span class="title">1 unsigned program starts with Windows</span><span class="cat">Startup</span></summary>
+<div class="body">
+<p>Unsigned does not mean malicious; plenty of small tools are unsigned. But almost all malware is, so these are the ones to recognise.</p>
+<p class="action"><b>What to do</b>Check that you recognise each one. Autoruns can submit them to VirusTotal.</p>
+<ul class="evidence"><li>RGBFusion [Logon]: C:\Program Files\GIGABYTE\RGBFusion\RGBFusion.exe</li></ul>
+</div>
+</details>
+<details class="finding" data-sev="ok">
+<summary><span class="led" data-sev="ok"></span><span class="title">CPU temperature is normal at idle (47 &#176;C)</span><span class="cat">Temperatures</span></summary>
+<div class="body">
+<p>Cooling looks fine when the PC is not under load.</p>
+</div>
+</details>
+<details class="finding" data-sev="ok">
+<summary><span class="led" data-sev="ok"></span><span class="title">All devices are working</span><span class="cat">Devices</span></summary>
+<div class="body">
+<p>Device Manager shows no warnings.</p>
+</div>
+</details>
+</section>
+<section>
+<h2>Readings</h2>
+<div class="readings"><div class="reading" data-sev="ok"><span class="value">47<small>&#176;C</small></span><span class="label">CPU at idle</span></div><div class="reading" data-sev="info"><span class="value">90<small>&#176;C</small></span><span class="label">CPU under load</span></div><div class="reading" data-sev="ok"><span class="value">4.48<small>GHz</small></span><span class="label">Clock under load</span></div><div class="reading" data-sev="ok"><span class="value">128<small>W</small></span><span class="label">CPU power, peak</span></div><div class="reading" data-sev="ok"><span class="value">41<small>&#176;C</small></span><span class="label">GPU at idle</span></div><div class="reading" data-sev="ok"><span class="value">812<small>RPM</small></span><span class="label">CPU fan</span></div><div class="reading" data-sev="ok"><span class="value">44<small>&#176;C</small></span><span class="label">980 PRO 1TB</span></div><div class="reading" data-sev="ok"><span class="value">46<small>&#176;C</small></span><span class="label">WD20EZRZ-00Z5HB0</span></div></div>
+</section>
+<section>
+<h2>Drives</h2>
+<div class="scroll"><table class="drives">
+<thead><tr><th>Drive</th><th>Type</th><th>Size</th><th>Health</th><th class="num">Temp</th><th class="num">Powered on</th><th class="num">Wear</th></tr></thead>
+<tbody>
+<tr><td>Samsung SSD 980 PRO 1TB  C:</td><td>NVMe SSD</td><td>1 TB</td><td><span class="led" data-sev="ok"></span>Healthy</td><td class="num">44 &#176;C</td><td class="num">9,120 h</td><td class="num">3% used</td></tr>
+<tr><td>WDC WD20EZRZ-00Z5HB0  D:</td><td>HDD SATA</td><td>2 TB</td><td><span class="led" data-sev="critical"></span>Unreadable sectors</td><td class="num">46 &#176;C</td><td class="num">31,877 h</td><td class="num"></td></tr>
+</tbody></table></div>
+</section>
+<section>
+<h2>This PC</h2>
+<dl class="spec">
+<div><dt>Computer</dt><dd>DESKTOP-7Q2K, Custom PC on ASUSTeK ROG STRIX B550-F GAMING</dd></div>
+<div><dt>Motherboard</dt><dd>ASUSTeK ROG STRIX B550-F GAMING</dd></div>
+<div><dt>BIOS</dt><dd>1401, 1 Sep 2020</dd></div>
+<div><dt>Processor</dt><dd>AMD Ryzen 7 5800X 8-Core Processor (8 cores, 16 threads)</dd></div>
+<div><dt>Graphics</dt><dd>NVIDIA GeForce RTX 3070, driver 32.0.15.6094 from 1 Aug 2024</dd></div>
+<div><dt>Memory</dt><dd>32 GB DDR4, 2 sticks in 4 slots, 2133 MT/s</dd></div>
+<div><dt>Windows</dt><dd>Windows 11 Pro 24H2, build 26100.4652</dd></div>
+<div><dt>Last restart</dt><dd>10 Sep 2026, 00:00 (28 days ago)</dd></div>
+<div><dt>Security</dt><dd>Secure Boot on, Memory Integrity on</dd></div>
+<div><dt>Sensor driver</dt><dd>PawnIO installed</dd></div>
+</dl>
+</section>
+<section class="log">
+<h2>How the check ran</h2>
+<div class="scroll"><table>
+<tbody>
+<tr><td><span class="led" data-sev="ok"></span>System overview</td><td>ASUS System Product Name</td><td class="num">0.8 s</td></tr>
+<tr><td><span class="led" data-sev="ok"></span>Temperatures at idle</td><td>CPU 47 &#176;C, GPU 41 &#176;C</td><td class="num">3.1 s</td></tr>
+<tr><td><span class="led" data-sev="ok"></span>Memory</td><td>32 GB in 2 sticks at 2133 MT/s</td><td class="num">0.3 s</td></tr>
+<tr><td><span class="led" data-sev="ok"></span>Drive health</td><td>2 drives found, SMART read from 2</td><td class="num">2.9 s</td></tr>
+<tr><td><span class="led" data-sev="ok"></span>Event logs</td><td>14 hardware errors, 3 blue screens, 3 unexpected shutdowns, 6 disk errors</td><td class="num">1.7 s</td></tr>
+<tr><td><span class="led" data-sev="ok"></span>Crash dumps</td><td>3 dumps analysed, most point at ntoskrnl.exe</td><td class="num">2.2 s</td></tr>
+<tr><td><span class="led" data-sev="ok"></span>Startup entries</td><td>41 non-Microsoft entries, 1 unsigned, 0 pointing at missing files</td><td class="num">24.6 s</td></tr>
+<tr><td><span class="led" data-sev="ok"></span>CPU load test</td><td>Peaked at 90 &#176;C, clocks fell 4% over the run</td><td class="num">31.0 s</td></tr>
+</tbody></table></div>
+<p class="note">Raw data from every step (SMART JSON, event summaries, tool output) is in the <code>raw</code> folder next to this file.</p>
+</section>
+</main>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<UserControl x:Class="DiagKit.Views.ToolsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DiagKit.ViewModels"
+             xmlns:ctl="clr-namespace:DiagKit.Controls">
+    <Grid Margin="32,26,12,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Margin="0,0,20,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBox x:Name="SearchBox" Style="{StaticResource SearchBox}" Width="250" Tag="Search tools (Ctrl+F)"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding LaunchFirstCommand}" />
+                        <KeyBinding Key="Escape" Command="{Binding ClearSearchCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
+                <Button Style="{StaticResource Button.Secondary}" Margin="8,0,0,0" Command="{Binding RescanCommand}"
+                        ToolTip="Look again for tools added to the tools folder">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE72C;" FontSize="12" Margin="0,0,8,0" />
+                        <TextBlock Text="Rescan" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource Button.Secondary}" Margin="8,0,0,0" Command="{Binding OpenToolsFolderCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE838;" FontSize="12" Margin="0,0,8,0" />
+                        <TextBlock Text="Tools folder" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <StackPanel>
+                <TextBlock Text="Tools" Style="{StaticResource Text.PageTitle}" />
+                <TextBlock Text="{Binding Summary}" Style="{StaticResource Text.Muted}" Margin="0,4,0,0" />
+            </StackPanel>
+        </DockPanel>
+
+        <ScrollViewer Grid.Row="1" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+            <StackPanel Margin="0,0,8,28">
+                <ItemsControl ItemsSource="{Binding Groups}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ToolGroupViewModel}">
+                            <StackPanel Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Section}" Margin="0,22,0,10" />
+                                <ItemsControl ItemsSource="{Binding Tools}" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:ToolViewModel}">
+                                            <Button x:Name="Tile" Style="{StaticResource Button.Tile}" Width="296" Height="94" Margin="0,0,10,10"
+                                                    Command="{Binding LaunchCommand}" ToolTip="{Binding LocationText}"
+                                                    Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="44" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <Grid x:Name="IconSlot" Grid.RowSpan="2" Width="32" Height="32" VerticalAlignment="Top" HorizontalAlignment="Left">
+                                                        <Border CornerRadius="5" Background="{StaticResource Raised}" BorderBrush="{StaticResource LineStrong}" BorderThickness="1"
+                                                                Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+                                                            <TextBlock Text="{Binding Monogram}" FontFamily="{StaticResource Font.Display}" FontWeight="SemiBold"
+                                                                       FontSize="12" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <Image Source="{Binding Icon}" Width="32" Height="32" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                    </Grid>
+
+                                                    <DockPanel Grid.Column="1">
+                                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="8,1,0,0">
+                                                            <ctl:Led State="{Binding Led}" Width="14" Height="14" Padding="3.5" />
+                                                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Faint}" Margin="3,0,0,0" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Name}" />
+                                                    </DockPanel>
+
+                                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Description}" Style="{StaticResource Text.Muted}"
+                                                               Margin="0,5,26,0" TextTrimming="CharacterEllipsis" MaxHeight="40" LineHeight="17"
+                                                               LineStackingStrategy="BlockLineHeight" />
+
+                                                    <Button Grid.Row="1" Grid.Column="1" Content="&#xE838;" Command="{Binding OpenFolderCommand}"
+                                                            ToolTip="Open this tool's folder" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                            Width="26" Height="26" Margin="0,0,-6,-6">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource Button.Icon}">
+                                                                <Setter Property="Opacity" Value="0" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                                                                        <Setter Property="Opacity" Value="1" />
+                                                                    </DataTrigger>
+                                                                    <Trigger Property="IsKeyboardFocused" Value="True">
+                                                                        <Setter Property="Opacity" Value="1" />
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </Grid>
+                                            </Button>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                                    <Setter TargetName="IconSlot" Property="Opacity" Value="0.45" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel Margin="0,40,0,0" Visibility="{Binding HasNoMatches, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="No tools match that search" Style="{StaticResource Text.Section}" Margin="0,0,0,6" />
+                    <TextBlock Style="{StaticResource Text.Muted}" Text="Search covers names, descriptions and categories. Press Esc to clear it." />
+                </StackPanel>
+
+                <TextBlock Margin="0,40,0,0" Text="Looking for tools…" Style="{StaticResource Text.Muted}"
+                           Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

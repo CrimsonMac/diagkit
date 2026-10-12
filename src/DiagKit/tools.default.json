@@ -1,0 +1,161 @@
+{
+  // DiagKit tool manifest. Edit freely; DiagKit re-reads it on "Rescan".
+  //   folder          subfolder of tools\ to search (recursively, 3 levels)
+  //   executables     file name patterns, tried in order (* and ? allowed)
+  //   arguments       passed on every launch
+  //   registryTraces  keys deleted after the tool exits, only if they did not exist before launch
+  //   registryParents same, but only deleted when left empty
+  //   hidden          used by the health check only, not shown as a tile
+  "version": 1,
+  "tools": [
+    {
+      "id": "hwinfo",
+      "name": "HWiNFO64",
+      "category": "Hardware",
+      "description": "Full hardware inventory and live sensors: temperatures, clocks, voltages, WHEA error counts.",
+      "folder": "HWiNFO64",
+      "executables": [ "HWiNFO64.exe" ],
+      "homepage": "https://www.hwinfo.com/download/"
+    },
+    {
+      "id": "cpuz",
+      "name": "CPU-Z",
+      "category": "Hardware",
+      "description": "CPU, motherboard and memory details, including RAM timings and SPD data per stick.",
+      "folder": "CPU-Z",
+      "executables": [ "cpuz_x64.exe", "cpuz*.exe" ],
+      "homepage": "https://www.cpuid.com/softwares/cpu-z.html"
+    },
+    {
+      "id": "gpuz",
+      "name": "GPU-Z",
+      "category": "Hardware",
+      "description": "Graphics card identity, BIOS, bus interface and sensors. Good for spotting fake or rebadged cards.",
+      "folder": "GPU-Z",
+      "executables": [ "GPU-Z*.exe" ],
+      "registryTraces": [ "HKCU\\Software\\techPowerUp\\GPU-Z" ],
+      "registryParents": [ "HKCU\\Software\\techPowerUp" ],
+      "homepage": "https://www.techpowerup.com/gpuz/"
+    },
+    {
+      "id": "crystaldiskinfo",
+      "name": "CrystalDiskInfo",
+      "category": "Storage",
+      "description": "SMART health, temperature and power-on hours for every drive.",
+      "folder": "CrystalDiskInfo",
+      "executables": [ "DiskInfo64.exe", "DiskInfo*.exe" ],
+      "homepage": "https://crystalmark.info/en/software/crystaldiskinfo/"
+    },
+    {
+      "id": "crystaldiskmark",
+      "name": "CrystalDiskMark",
+      "category": "Storage",
+      "description": "Sequential and random read/write benchmark. Catches drives running far below their rated speed.",
+      "folder": "CrystalDiskMark",
+      "executables": [ "DiskMark64.exe", "DiskMark*.exe" ],
+      "homepage": "https://crystalmark.info/en/software/crystaldiskmark/"
+    },
+    {
+      "id": "wiztree",
+      "name": "WizTree",
+      "category": "Storage",
+      "description": "Shows what is filling a drive, in seconds, by reading the NTFS file table directly.",
+      "folder": "WizTree",
+      "executables": [ "WizTree64.exe", "WizTree.exe" ],
+      "homepage": "https://diskanalyzer.com/download"
+    },
+    {
+      "id": "everything",
+      "name": "Everything",
+      "category": "Storage",
+      "description": "Instant file name search across all NTFS drives. Handy for finding logs and dumps.",
+      "folder": "Everything",
+      "executables": [ "Everything64.exe", "Everything.exe" ],
+      "homepage": "https://www.voidtools.com/downloads/"
+    },
+    {
+      "id": "testmem5",
+      "name": "TestMem5",
+      "category": "Memory and stability",
+      "description": "RAM stress test inside Windows. Load the anta777 or 1usmus config for meaningful coverage.",
+      "folder": "TestMem5",
+      "executables": [ "TM5.exe" ]
+    },
+    {
+      "id": "bluescreenview",
+      "name": "BlueScreenView",
+      "category": "Crashes and startup",
+      "description": "Reads crash dumps and names the driver each blue screen points at.",
+      "folder": "BlueScreenView",
+      "executables": [ "BlueScreenView.exe" ],
+      "homepage": "https://www.nirsoft.net/utils/blue_screen_view.html"
+    },
+    {
+      "id": "autoruns",
+      "name": "Autoruns",
+      "category": "Crashes and startup",
+      "description": "Every startup entry, service, driver and scheduled task, with signature checks.",
+      "folder": "Autoruns",
+      "executables": [ "Autoruns64.exe", "Autoruns.exe" ],
+      "arguments": "-accepteula",
+      "registryTraces": [ "HKCU\\Software\\Sysinternals\\Autoruns" ],
+      "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "homepage": "https://learn.microsoft.com/sysinternals/downloads/autoruns"
+    },
+    {
+      "id": "procexp",
+      "name": "Process Explorer",
+      "category": "Processes and memory",
+      "description": "Task Manager done properly: process tree, handles, DLLs, and VirusTotal lookups.",
+      "folder": "ProcessExplorer",
+      "executables": [ "procexp64.exe", "procexp.exe" ],
+      "arguments": "-accepteula",
+      "registryTraces": [ "HKCU\\Software\\Sysinternals\\Process Explorer" ],
+      "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "homepage": "https://learn.microsoft.com/sysinternals/downloads/process-explorer"
+    },
+    {
+      "id": "rammap",
+      "name": "RAMMap",
+      "category": "Processes and memory",
+      "description": "Where physical memory actually went: standby list, driver allocations, mapped files.",
+      "folder": "RAMMap",
+      "executables": [ "RAMMap64.exe", "RAMMap.exe" ],
+      "arguments": "-accepteula",
+      "registryTraces": [ "HKCU\\Software\\Sysinternals\\RAMMap" ],
+      "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "homepage": "https://learn.microsoft.com/sysinternals/downloads/rammap"
+    },
+    {
+      "id": "pawnio",
+      "name": "PawnIO driver setup",
+      "category": "Drivers",
+      "description": "Installs the signed PawnIO driver so the health check can read CPU temperatures. This installs a driver on the PC.",
+      "folder": "PawnIO",
+      "executables": [ "PawnIO_setup.exe", "PawnIO*setup*.exe", "PawnIO*.exe" ],
+      "homepage": "https://pawnio.eu/"
+    },
+    {
+      "id": "smartctl",
+      "name": "smartctl",
+      "category": "Health check components",
+      "description": "Reads SMART data for the health check.",
+      "folder": "smartmontools",
+      "executables": [ "smartctl.exe" ],
+      "hidden": true,
+      "homepage": "https://www.smartmontools.org/"
+    },
+    {
+      "id": "autorunsc",
+      "name": "autorunsc",
+      "category": "Health check components",
+      "description": "Console Autoruns, used by the health check to list unsigned startup entries.",
+      "folder": "Autoruns",
+      "executables": [ "autorunsc64.exe", "autorunsc.exe" ],
+      "arguments": "-accepteula",
+      "registryTraces": [ "HKCU\\Software\\Sysinternals\\Autoruns" ],
+      "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "hidden": true
+    }
+  ]
+}
