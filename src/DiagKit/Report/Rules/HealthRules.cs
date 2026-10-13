@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace DiagKit.Report;
@@ -901,6 +902,10 @@ public static class HealthRules
         }
     }
 
+    // The kit's exe may have been renamed; its default name is kept so older copies are filtered too.
+    private static readonly string[] OwnExeNames = new[] { Path.GetFileName(Environment.ProcessPath ?? ""), "DiagKit.exe" }
+        .Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+
     private static void Programs(DiagnosticReport r, List<Finding> f)
     {
         if (r.Events == null)
@@ -910,7 +915,7 @@ public static class HealthRules
 
         // DiagKit's own crashes say nothing about the PC being checked.
         var frequent = r.Events.AppCrashes
-            .Where(a => a.Count >= 3 && !a.Label.Equals("DiagKit.exe", StringComparison.OrdinalIgnoreCase))
+            .Where(a => a.Count >= 3 && !OwnExeNames.Contains(a.Label, StringComparer.OrdinalIgnoreCase))
             .Take(8).ToList();
         if (frequent.Count > 0)
         {
