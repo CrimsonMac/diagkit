@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    All build output goes to .build\ at the repository root instead of bin\ and obj\ folders inside every
+    project. The finished setup.exe is copied to Release\ (see Setup\Setup.csproj).
+  -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory).build\bin\$(MSBuildProjectName)\</BaseOutputPath>
+  </PropertyGroup>
+</Project>

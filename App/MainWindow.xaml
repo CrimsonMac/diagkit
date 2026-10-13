@@ -85,7 +85,7 @@
 
         <!-- Navigation rail -->
         <Border Grid.Row="1" Background="{StaticResource Rail}">
-            <DockPanel>
+            <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Top" Margin="0,6,0,0">
                     <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE90F;" Content="Tools"
                                  IsChecked="{Binding IsToolsPage, Mode=TwoWay}" ToolTip="Tools (Ctrl+1)" />
@@ -95,7 +95,11 @@
                                  IsChecked="{Binding IsHistoryPage, Mode=TwoWay}" ToolTip="Saved reports (Ctrl+3)" />
                 </StackPanel>
                 <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionText}" Style="{StaticResource Text.Faint}" HorizontalAlignment="Center"
-                           VerticalAlignment="Bottom" Margin="0,0,0,14" />
+                           Margin="0,0,0,14" />
+                <Button DockPanel.Dock="Bottom" Style="{StaticResource Button.Icon}" Content="&#xE74D;" Width="40" Height="36" Margin="0,0,0,6"
+                        HorizontalAlignment="Center" Command="{Binding UninstallCommand}" AutomationProperties.Name="Uninstall"
+                        Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVis}}"
+                        ToolTip="Clean this PC or remove DiagKit (opens Uninstall.exe)" />
             </DockPanel>
         </Border>
 

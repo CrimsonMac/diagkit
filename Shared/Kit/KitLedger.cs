@@ -37,6 +37,12 @@ public sealed class KitLedger
     /// <summary>Traces on PCs. Only entries for the current PC can be cleaned from here.</summary>
     public List<PcTrace> Traces { get; } = new();
 
+    /// <summary>
+    /// Earlier names of the kit folder (relative to its drive, e.g. "diagkit.1.0.0"), kept when setup renames the
+    /// kit for a new version, so Uninstall can also find Windows' records of programs run from the old name.
+    /// </summary>
+    public List<string> FormerNames { get; } = new();
+
     private KitLedger(string kitDir)
     {
         KitDir = kitDir;
@@ -71,6 +77,9 @@ public sealed class KitLedger
                 case "file" when f.Length > 1:
                     ledger.Files.Add(f[1]);
                     break;
+                case "formername" when f.Length > 1:
+                    ledger.FormerNames.Add(f[1]);
+                    break;
                 case "tool" when f.Length > 2:
                     ledger.Tools.Add(new ToolRecord(f[1], f[2]));
                     break;
@@ -95,6 +104,11 @@ public sealed class KitLedger
         foreach (string f in Files.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             sb.Append("file\t").Append(Clean(f)).Append("\r\n");
+        }
+
+        foreach (string n in FormerNames.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            sb.Append("formername\t").Append(Clean(n)).Append("\r\n");
         }
 
         foreach (ToolRecord t in Tools)

@@ -44,6 +44,7 @@ public sealed class MainViewModel : ObservableObject
             Page = AppPage.Tools;
             Tools.RequestSearchFocus();
         });
+        UninstallCommand = new RelayCommand(StartUninstall);
         RunCheckCommand = new RelayCommand(() =>
         {
             Page = AppPage.Health;
@@ -61,6 +62,12 @@ public sealed class MainViewModel : ObservableObject
     public ICommand DismissNoticeCommand { get; }
     public ICommand FindCommand { get; }
     public ICommand RunCheckCommand { get; }
+    public ICommand UninstallCommand { get; }
+
+    /// <summary>Raised when DiagKit should close (Uninstall.exe was started and will clean up after it).</summary>
+    public event Action? CloseRequested;
+
+    public bool CanUninstall => System.IO.File.Exists(System.IO.Path.Combine(AppPaths.BaseDir, Kit.KitLayout.UninstallExe));
     public bool IsElevated { get; }
     public string MachineName => Environment.MachineName;
     public string VersionText => "v" + AppInfo.Version;
@@ -187,6 +194,23 @@ public sealed class MainViewModel : ObservableObject
         {
             IsNoticeVisible = false;
         }
+    }
+
+    private void StartUninstall()
+    {
+        string exe = System.IO.Path.Combine(AppPaths.BaseDir, Kit.KitLayout.UninstallExe);
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = AppPaths.BaseDir })?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            ShowNotice("Could not open the uninstaller: " + ex.Message, LedState.Critical);
+            return;
+        }
+
+        // The uninstaller closes anything still running from the kit; closing DiagKit first lets it finish its own cleanup.
+        CloseRequested?.Invoke();
     }
 
     private void OpenReport(ReportViewModel report)

@@ -14,6 +14,7 @@ public partial class App : Application
         base.OnStartup(e);
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AsyncCommand.UnhandledError = ex => AppPaths.LogError("Command failed", ex);
         TaskScheduler.UnobservedTaskException += (_, args) =>
         {
             AppPaths.LogError("Unobserved task exception", args.Exception);
@@ -24,6 +25,7 @@ public partial class App : Application
         var window = new MainWindow();
         var vm = new MainViewModel(IconLoader.Load, window.Confirm);
         window.DataContext = vm;
+        vm.CloseRequested += window.Close;
         MainWindow = window;
         window.Show();
     }

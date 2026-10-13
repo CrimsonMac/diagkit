@@ -74,6 +74,10 @@ public class RelayCommand : ICommand
 /// <summary>Async command that disables itself while running and reports failures instead of crashing.</summary>
 public sealed class AsyncCommand : ICommand
 {
+    /// <summary>Where failures of commands without their own error handler go. Each program sets it at startup.</summary>
+    public static Action<Exception> UnhandledError { get; set; } = ex =>
+        System.Windows.MessageBox.Show(ex.Message, "DiagKit", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+
     private readonly Func<object?, Task> _execute;
     private readonly Func<object?, bool>? _canExecute;
     private readonly Action<Exception>? _onError;
@@ -117,7 +121,7 @@ public sealed class AsyncCommand : ICommand
             }
             else
             {
-                Services.AppPaths.LogError("Command failed", ex);
+                UnhandledError(ex);
             }
         }
         finally

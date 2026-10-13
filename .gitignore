@@ -1,7 +1,8 @@
-﻿# Build output
+# Build output (all of it lands in .build; setup.exe is copied to Release)
+.build/
+Release/
 bin/
 obj/
-dist/
 
 # IDE
 .vs/
@@ -12,7 +13,7 @@ dist/
 *.rsuser
 
 # Runtime output
-reports/
+Reports/
 *.log
 
 # OS junk

@@ -1,0 +1,153 @@
+<Window x:Class="DiagKit.Uninstall.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:DiagKit.Controls"
+        Title="Uninstall DiagKit" Width="760" Height="640" MinWidth="560" MinHeight="460"
+        WindowStartupLocation="CenterScreen" Icon="Assets/app.ico"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        FontFamily="{StaticResource Font.Body}" FontSize="13.5" UseLayoutRounding="True">
+    <Window.Resources>
+        <!-- A radio button drawn as a selectable card. -->
+        <Style x:Key="Choice" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                                CornerRadius="8" Padding="16,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Width="18" Height="18" VerticalAlignment="Top" Margin="0,2,14,0">
+                                    <Ellipse x:Name="Ring" Stroke="{StaticResource Faint}" StrokeThickness="1.5" />
+                                    <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{StaticResource Accent}" Visibility="Collapsed" />
+                                </Grid>
+                                <ContentPresenter Grid.Column="1" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Raised}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentLine}" />
+                                <Setter TargetName="Ring" Property="Stroke" Value="{StaticResource Accent}" />
+                                <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="Bullet">
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="18" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Ellipse Width="5" Height="5" Fill="{StaticResource Faint}" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2,8,0,0" />
+                <TextBlock Grid.Column="1" Text="{Binding}" Style="{StaticResource Text.Muted}" FontSize="13" LineHeight="19" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="32,26,32,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Uninstall DiagKit" Style="{StaticResource Text.PageTitle}" />
+            <TextBlock Text="{Binding KitDir}" Style="{StaticResource Text.Faint}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Choose -->
+        <ScrollViewer Grid.Row="1" Margin="0,18,-12,0" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsChoosing, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <RadioButton Style="{StaticResource Choice}" GroupName="Mode" IsChecked="{Binding RemoveKit, Mode=TwoWay}">
+                    <StackPanel>
+                        <TextBlock Text="Remove DiagKit completely" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Text.Muted}" Margin="0,3,0,0"
+                                   Text="Deletes the kit and removes everything DiagKit and its tools left on this PC." />
+                    </StackPanel>
+                </RadioButton>
+                <RadioButton Style="{StaticResource Choice}" GroupName="Mode" Margin="0,8,0,0" IsChecked="{Binding CleanOnly, Mode=TwoWay}">
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold">
+                            <Run Text="Only clean" /> <Run Text="{Binding PcName, Mode=OneWay}" />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Text.Muted}" Margin="0,3,0,0"
+                                   Text="Removes what DiagKit left on this PC and keeps the kit, for example when you are done with a customer's PC." />
+                    </StackPanel>
+                </RadioButton>
+
+                <StackPanel Margin="2,18,0,0">
+                    <CheckBox Content="{Binding ReportsText}" IsChecked="{Binding DeleteReports, Mode=TwoWay}"
+                              Visibility="{Binding HasReports, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10" />
+                    <CheckBox Content="{Binding PawnIoText}" IsChecked="{Binding RemovePawnIo, Mode=TwoWay}"
+                              Visibility="{Binding ShowPawnIoOption, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10" />
+                </StackPanel>
+
+                <TextBlock Text="Will be removed" Style="{StaticResource Text.Section}" Margin="0,10,0,10" />
+                <ItemsControl ItemsSource="{Binding WillRemove}" ItemTemplate="{StaticResource Bullet}" Focusable="False" />
+
+                <TextBlock Text="Will be kept" Style="{StaticResource Text.Section}" Margin="0,14,0,10" />
+                <ItemsControl ItemsSource="{Binding WillKeep}" ItemTemplate="{StaticResource Bullet}" Focusable="False" />
+
+                <Border BorderBrush="{StaticResource Led.Warning}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0"
+                        Visibility="{Binding OtherPcsText, Converter={StaticResource NotEmptyToVis}}">
+                    <DockPanel>
+                        <ctl:Led State="Warning" VerticalAlignment="Top" Margin="0,1,10,0" />
+                        <TextBlock Text="{Binding OtherPcsText}" TextWrapping="Wrap" LineHeight="19" />
+                    </DockPanel>
+                </Border>
+                <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,10,0,0"
+                        Visibility="{Binding RunningText, Converter={StaticResource NotEmptyToVis}}">
+                    <DockPanel>
+                        <ctl:Led State="Info" VerticalAlignment="Top" Margin="0,1,10,0" />
+                        <TextBlock Text="{Binding RunningText}" TextWrapping="Wrap" LineHeight="19" />
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Working / done -->
+        <DockPanel Grid.Row="1" Margin="0,22,0,0" Visibility="{Binding IsChoosing, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+                <StackPanel Orientation="Horizontal" Visibility="{Binding IsWorking, Converter={StaticResource BoolToVis}}">
+                    <ctl:Led State="Busy" Margin="0,0,10,0" />
+                    <TextBlock Text="Removing…" Style="{StaticResource Text.Section}" Margin="0" />
+                </StackPanel>
+                <StackPanel Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ctl:Led State="{Binding ResultLed}" Margin="0,0,10,0" />
+                        <TextBlock Text="{Binding ResultTitle}" Style="{StaticResource Text.Section}" Margin="0" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ResultText}" Style="{StaticResource Text.Muted}" Margin="26,6,0,0" FontSize="13" />
+                </StackPanel>
+            </StackPanel>
+            <Border Style="{StaticResource Card}" Padding="14,10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Log}" ItemTemplate="{StaticResource Bullet}" Focusable="False" />
+                </ScrollViewer>
+            </Border>
+        </DockPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Style="{StaticResource Button.Secondary}" Content="Cancel" Command="{Binding CloseCommand}" IsCancel="True"
+                    Visibility="{Binding IsChoosing, Converter={StaticResource BoolToVis}}" />
+            <Button Style="{StaticResource Button.Primary}" Content="{Binding ActionText}" Command="{Binding UninstallCommand}" Margin="8,0,0,0"
+                    Visibility="{Binding IsChoosing, Converter={StaticResource BoolToVis}}" />
+            <Button Style="{StaticResource Button.Primary}" Content="Close" Command="{Binding CloseCommand}" IsDefault="True"
+                    Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}" />
+        </StackPanel>
+    </Grid>
+</Window>
