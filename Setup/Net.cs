@@ -46,6 +46,7 @@ public static class Net
 
     public static async Task<string> GetStringAsync(string url, CancellationToken ct)
     {
+        Blocked(url);
         using var cts = Linked(ct, TimeSpan.FromSeconds(60));
         using HttpResponseMessage r = await Client.GetAsync(url, cts.Token).ConfigureAwait(false);
         r.EnsureSuccessStatusCode();
@@ -54,6 +55,7 @@ public static class Net
 
     public static async Task<string> PostFormAsync(string url, IDictionary<string, string> form, CancellationToken ct)
     {
+        Blocked(url);
         using var cts = Linked(ct, TimeSpan.FromSeconds(60));
         using HttpResponseMessage r = await Client.PostAsync(url, new FormUrlEncodedContent(form), cts.Token).ConfigureAwait(false);
         r.EnsureSuccessStatusCode();
@@ -63,6 +65,7 @@ public static class Net
     /// <summary>Posts a form and returns where the server redirects to, without following it.</summary>
     public static async Task<string?> PostForRedirectAsync(string url, IDictionary<string, string> form, CancellationToken ct)
     {
+        Blocked(url);
         using var cts = Linked(ct, TimeSpan.FromSeconds(30));
         using HttpResponseMessage r = await NoRedirect.PostAsync(url, new FormUrlEncodedContent(form), cts.Token).ConfigureAwait(false);
         Uri? location = r.Headers.Location;
@@ -80,6 +83,7 @@ public static class Net
         try
         {
             using var cts = Linked(ct, TimeSpan.FromSeconds(30));
+            Blocked(url);
             using var request = new HttpRequestMessage(HttpMethod.Head, url);
             using HttpResponseMessage r = await Client.SendAsync(request, cts.Token).ConfigureAwait(false);
             if (!r.IsSuccessStatusCode)
@@ -100,6 +104,7 @@ public static class Net
     /// <summary>Downloads to a file. A blocked or moved download often comes back as a web page with status 200; that counts as a failure.</summary>
     public static async Task DownloadAsync(string url, string path, CancellationToken ct, IProgress<long>? progress = null)
     {
+        Blocked(url);
         using var cts = Linked(ct, TimeSpan.FromMinutes(10));
         using HttpResponseMessage r = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cts.Token).ConfigureAwait(false);
         if (!r.IsSuccessStatusCode)
@@ -127,6 +132,20 @@ public static class Net
         if (Encoding.ASCII.GetString(head, 0, n).TrimStart().StartsWith("<", StringComparison.Ordinal))
         {
             throw new InvalidDataException("the server returned a web page instead of the file");
+        }
+    }
+
+    /// <summary>
+    /// Test hook (debug builds only): DIAGKIT_BLOCK="host1,host2" makes requests to those hosts fail, to exercise the
+    /// fallback sources without taking a site down.
+    /// </summary>
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void Blocked(string url)
+    {
+        string? block = Environment.GetEnvironmentVariable("DIAGKIT_BLOCK");
+        if (!string.IsNullOrEmpty(block) && block!.Split(',').Any(h => Host(url).EndsWith(h.Trim(), StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new HttpRequestException("blocked for testing");
         }
     }
 

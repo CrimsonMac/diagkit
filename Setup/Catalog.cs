@@ -30,7 +30,10 @@ public sealed class Source
     /// <summary>Other hosts serving the same path. Only used for hash-verified downloads, so any copy is as good as the original.</summary>
     public string[] Mirrors { get; set; } = new string[0];
 
-    /// <summary>Other URLs for the same file; {version} and {version_} (dots as underscores) are filled in.</summary>
+    /// <summary>
+    /// Other URLs for the same file; {version} and {version_} (dots as underscores) are filled in. "pattern=>replacement"
+    /// rewrites the primary URL instead (a regular expression), for hosts that keep the file under another path.
+    /// </summary>
     public string[] AltUrls { get; set; } = new string[0];
 }
 
@@ -202,9 +205,17 @@ public static class Catalog
         },
         new ToolSpec
         {
-            // Unsigned; the Scoop manifest carries the official mersenne.ca link and its SHA-256.
+            // Unsigned; the Scoop manifest carries the official mersenne.ca link and its SHA-256. mersenne.org has the same
+            // file under /download/software.
             Name = "Prime95", Folder = "Prime95", Category = "Memory and stability", SizeMb = 24,
-            Sources = { Scoop("Extras/prime95") },
+            Sources =
+            {
+                new Source
+                {
+                    Kind = "scoop", Spec = "Extras/prime95",
+                    AltUrls = new[] { @"^https?://download\.mersenne\.ca/gimps/(.+)$=>https://www.mersenne.org/download/software/$1" },
+                },
+            },
         },
 
         // ---- Crashes and startup

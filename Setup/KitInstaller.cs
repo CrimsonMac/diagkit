@@ -130,6 +130,12 @@ public sealed class KitInstaller
         return set;
     }
 
+    /// <summary>
+    /// Update only the given tools and leave the rest of the kit as it is (setup /tools). Otherwise the selection is the
+    /// whole kit: unticked tools DiagKit installed are removed, and remembered as unwanted.
+    /// </summary>
+    public bool OnlyThese { get; set; }
+
     public async Task<InstallSummary> RunAsync(CancellationToken ct)
     {
         var summary = new InstallSummary();
@@ -172,16 +178,19 @@ public sealed class KitInstaller
             });
             await Task.WhenAll(jobs).ConfigureAwait(false);
 
-            KitLedger.Update(kit, l =>
+            if (!OnlyThese)
             {
-                l.Unwanted.Clear();
-                l.Unwanted.AddRange(Catalog.All.Where(t => !_selected.Contains(t)).Select(t => t.Folder));
-            });
+                KitLedger.Update(kit, l =>
+                {
+                    l.Unwanted.Clear();
+                    l.Unwanted.AddRange(Catalog.All.Where(t => !_selected.Contains(t)).Select(t => t.Folder));
+                });
 
-            // Tools DiagKit installed earlier that are no longer wanted.
-            foreach (ToolSpec t in Catalog.All.Where(t => !_selected.Contains(t) && installed.Contains(t.Folder)))
-            {
-                RemoveTool(kit, t);
+                // Tools DiagKit installed earlier that are no longer wanted.
+                foreach (ToolSpec t in Catalog.All.Where(t => !_selected.Contains(t) && installed.Contains(t.Folder)))
+                {
+                    RemoveTool(kit, t);
+                }
             }
         }
         finally

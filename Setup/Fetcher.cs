@@ -391,7 +391,23 @@ public sealed class Fetcher
     internal static List<string> MirrorUrls(string url, string[] mirrors, string[] altUrls, string version)
     {
         var list = new List<string> { url };
-        list.AddRange(altUrls.Select(a => a.Replace("{version_}", version.Replace('.', '_')).Replace("{version}", version)));
+        foreach (string alt in altUrls)
+        {
+            int arrow = alt.IndexOf("=>", StringComparison.Ordinal);
+            if (arrow > 0)
+            {
+                // "pattern=>replacement": the same file under another path on another host.
+                var rx = new Regex(alt.Substring(0, arrow), RegexOptions.IgnoreCase);
+                if (rx.IsMatch(url))
+                {
+                    list.Add(rx.Replace(url, alt.Substring(arrow + 2)));
+                }
+            }
+            else
+            {
+                list.Add(alt.Replace("{version_}", version.Replace('.', '_')).Replace("{version}", version));
+            }
+        }
         Match sf = Regex.Match(url, @"^https?://downloads\.sourceforge\.net/project/(.+)$");
         if (sf.Success)
         {

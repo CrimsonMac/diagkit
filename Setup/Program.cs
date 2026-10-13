@@ -11,7 +11,7 @@ namespace DiagKit.Setup;
 /// <summary>
 /// setup.exe [/target &lt;folder&gt;] [/tools name,name] [/force] [/quiet]
 ///   /target  where to put the kit: an existing kit, or a folder (a USB stick's root) to create diagkit.&lt;version&gt; in
-///   /tools   only these tools (names or folders, comma-separated); tools the health check needs are always included
+///   /tools   update only these tools (names or folders, comma-separated) and leave the rest of the kit as it is
 ///   /force   download every tool again, even when it is up to date
 ///   /quiet   no window; writes progress to setup.log next to setup.exe and exits with 0 when every tool installed
 /// </summary>
@@ -73,7 +73,7 @@ public static class Program
             KitTarget kit = KitTarget.For(target);
             List<ToolSpec> tools = only ?? SetupViewModel.DefaultSelection(kit).ToList();
             Write($"{(kit.Existing ? "Updating" : "Creating")} {kit.KitDir}");
-            var installer = new KitInstaller(kit, tools, force, p => Write($"{p.Tool.Name}: {p.State} {p.Detail}"), Write);
+            var installer = new KitInstaller(kit, tools, force, p => Write($"{p.Tool.Name}: {p.State} {p.Detail}"), Write) { OnlyThese = only != null };
             InstallSummary s = installer.RunAsync(CancellationToken.None).GetAwaiter().GetResult();
             foreach (string note in s.Notes)
             {
