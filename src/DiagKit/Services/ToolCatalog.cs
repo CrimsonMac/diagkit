@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -105,63 +106,67 @@ public static class ToolCatalog
         }
     }
 
-    private static readonly EnumerationOptions SearchOptions = new()
+    /// <summary>How many folder levels below the folder being searched an executable may sit.</summary>
+    private const int SearchDepth = 3;
+
+    private static readonly EnumerationOptions WalkOptions = new()
     {
         RecurseSubdirectories = true,
-        MaxRecursionDepth = 3,
-        MatchCasing = MatchCasing.CaseInsensitive,
+        // One extra level, so a tool's own folder (tools\<folder>) can be searched SearchDepth levels deep too.
+        MaxRecursionDepth = SearchDepth + 1,
         IgnoreInaccessible = true,
         AttributesToSkip = FileAttributes.System,
     };
 
     /// <summary>
-    /// Finds the executable for a tool: first in its own folder, then anywhere under tools\
-    /// (so a zip extracted into a differently named folder still works).
+    /// Finds the executable for each tool: first in its own folder, then anywhere under tools\
+    /// (so a zip extracted into a differently named folder still works). The folder tree is read once
+    /// for all tools; on a slow USB stick the directory walk is the expensive part.
     /// </summary>
-    public static string? Resolve(ToolDefinition tool)
+    public static List<string?> ResolveAll(IReadOnlyList<ToolDefinition> tools)
     {
         string root = AppPaths.ToolsRoot;
-        if (!Directory.Exists(root))
+        List<string> files = new();
+        try
         {
-            return null;
-        }
-
-        if (!string.IsNullOrWhiteSpace(tool.Folder))
-        {
-            string own = Path.Combine(root, tool.Folder);
-            string? hit = FindFirst(own, tool.Executables);
-            if (hit != null)
+            if (Directory.Exists(root))
             {
-                return hit;
+                files = Directory.EnumerateFiles(root, "*", WalkOptions).ToList();
             }
         }
+        catch (Exception)
+        {
+            // Unreadable tools folder: every tool shows as missing.
+        }
 
-        return FindFirst(root, tool.Executables);
+        var result = new List<string?>(tools.Count);
+        foreach (ToolDefinition tool in tools)
+        {
+            string? hit = string.IsNullOrWhiteSpace(tool.Folder)
+                ? null
+                : FindFirst(files, Path.Combine(root, tool.Folder), tool.Executables);
+            result.Add(hit ?? FindFirst(files, root, tool.Executables));
+        }
+
+        return result;
     }
 
-    private static string? FindFirst(string dir, IEnumerable<string> patterns)
+    private static string? FindFirst(List<string> files, string dir, IEnumerable<string> patterns)
     {
-        if (!Directory.Exists(dir))
-        {
-            return null;
-        }
+        string prefix = dir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        List<string> inScope = files.Where(f => f.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+                                                f.AsSpan(prefix.Length).Count(Path.DirectorySeparatorChar) <= SearchDepth)
+            .ToList();
 
         foreach (string pattern in patterns)
         {
-            try
+            // Shortest path wins: prefer the copy nearest the tool folder root.
+            string? best = inScope
+                .Where(f => FileSystemName.MatchesSimpleExpression(pattern, Path.GetFileName(f.AsSpan()), ignoreCase: true))
+                .MinBy(f => f.Length);
+            if (best != null)
             {
-                // Shortest path wins: prefer the copy nearest the tool folder root.
-                string? best = Directory.EnumerateFiles(dir, pattern, SearchOptions)
-                    .OrderBy(p => p.Length)
-                    .FirstOrDefault();
-                if (best != null)
-                {
-                    return best;
-                }
-            }
-            catch (Exception)
-            {
-                // Bad pattern or unreadable folder; try the next pattern.
+                return best;
             }
         }
 

@@ -255,7 +255,8 @@ public sealed class ToolsViewModel : ObservableObject
             (result, resolved) = await Task.Run(() =>
             {
                 ManifestLoadResult r = ToolCatalog.LoadManifest();
-                var list = r.Manifest.Tools.Select(t => (Def: t, Path: ToolCatalog.Resolve(t))).ToList();
+                List<string?> found = ToolCatalog.ResolveAll(r.Manifest.Tools);
+                var list = r.Manifest.Tools.Select((t, i) => (Def: t, Path: found[i])).ToList();
                 return (r, list);
             });
         }
