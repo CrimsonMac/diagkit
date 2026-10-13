@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft.Win32;
 
 namespace DiagKit.Report.Collectors;
 
@@ -19,8 +20,7 @@ public sealed class CrashDumpCollector : ICollector
 
     public async Task CollectAsync(CollectorContext ctx, CollectorStatus status, CancellationToken ct)
     {
-        string windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-        string dumpDir = Path.Combine(windows, "Minidump");
+        string dumpDir = MinidumpFolder();
         List<FileInfo> dumps = new();
         try
         {
@@ -56,7 +56,9 @@ public sealed class CrashDumpCollector : ICollector
 
         string xmlPath = ctx.RawPath("bluescreenview.xml");
         status.Detail = $"Analysing {TextUtil.Plural(dumps.Count, "dump")}";
-        ProcessResult res = await ProcessRunner.RunAsync(bsv, $"/sxml \"{xmlPath}\"", TimeSpan.FromSeconds(75), ct).ConfigureAwait(false);
+        // Name the folder explicitly: BlueScreenView otherwise uses whatever its .cfg remembers from the last GUI session.
+        string args = $"/LoadFrom 1 /MiniDumpFolder \"{dumpDir.TrimEnd('\\')}\" /sxml \"{xmlPath}\"";
+        ProcessResult res = await ProcessRunner.RunAsync(bsv, args, TimeSpan.FromSeconds(75), ct).ConfigureAwait(false);
         if (res.TimedOut || !File.Exists(xmlPath))
         {
             status.IsPartial = true;
@@ -76,6 +78,22 @@ public sealed class CrashDumpCollector : ICollector
             .ToList();
         status.Detail = TextUtil.Plural(parsed.Count, "dump") + " analysed" +
                         (drivers.Count > 0 ? ", most point at " + string.Join(" and ", drivers) : "");
+    }
+
+    /// <summary>Where Windows writes minidumps: CrashControl\MinidumpDir (admins can move it), else %SystemRoot%\Minidump.</summary>
+    private static string MinidumpFolder()
+    {
+        string fallback = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Minidump");
+        try
+        {
+            using RegistryKey? key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\CrashControl");
+            // REG_EXPAND_SZ: GetValue expands %SystemRoot% by default.
+            return key?.GetValue("MinidumpDir") is string dir && !string.IsNullOrWhiteSpace(dir) ? dir.Trim() : fallback;
+        }
+        catch
+        {
+            return fallback;
+        }
     }
 
     private static List<CrashDump> Parse(string xmlPath, List<FileInfo> dumps)
