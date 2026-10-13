@@ -10,8 +10,6 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>DiagKit.Uninstall</RootNamespace>
     <AssemblyName>Uninstall</AssemblyName>
-    <Version>1.1.0</Version>
-    <Product>DiagKit</Product>
     <AssemblyTitle>Uninstall DiagKit</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\App\Assets\app.ico</ApplicationIcon>

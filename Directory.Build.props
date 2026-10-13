@@ -1,9 +1,12 @@
 <Project>
   <!--
+    Shared by DiagKit.exe, Uninstall.exe and setup.exe.
     All build output goes to .build\ at the repository root instead of bin\ and obj\ folders inside every
     project. The finished setup.exe is copied to Release\ (see Setup\Setup.csproj).
   -->
   <PropertyGroup>
+    <Version>1.1.0</Version>
+    <Product>DiagKit</Product>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <BaseOutputPath>$(MSBuildThisFileDirectory).build\bin\$(MSBuildProjectName)\</BaseOutputPath>
   </PropertyGroup>

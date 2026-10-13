@@ -15,8 +15,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>DiagKit</RootNamespace>
     <AssemblyName>DiagKit</AssemblyName>
-    <Version>1.1.0</Version>
-    <Product>DiagKit</Product>
     <Copyright>DiagKit contributors</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Program.Main wraps WPF startup so early failures are logged instead of silently killing the process. -->
@@ -26,6 +24,7 @@
     <Prefer32Bit>false</Prefer32Bit>
     <!-- No DiagKit.exe.config: binding redirects are handled by the embedded-assembly resolver in Program. -->
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
     <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
 
     <!-- Lets the project restore/build on non-Windows CI; harmless on Windows. -->

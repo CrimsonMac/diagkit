@@ -43,6 +43,9 @@ public sealed class KitLedger
     /// </summary>
     public List<string> FormerNames { get; } = new();
 
+    /// <summary>Tool folders the user unticked in setup, so the next run does not offer them again by default.</summary>
+    public List<string> Unwanted { get; } = new();
+
     private KitLedger(string kitDir)
     {
         KitDir = kitDir;
@@ -80,6 +83,9 @@ public sealed class KitLedger
                 case "formername" when f.Length > 1:
                     ledger.FormerNames.Add(f[1]);
                     break;
+                case "unwanted" when f.Length > 1:
+                    ledger.Unwanted.Add(f[1]);
+                    break;
                 case "tool" when f.Length > 2:
                     ledger.Tools.Add(new ToolRecord(f[1], f[2]));
                     break;
@@ -109,6 +115,11 @@ public sealed class KitLedger
         foreach (string n in FormerNames.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             sb.Append("formername\t").Append(Clean(n)).Append("\r\n");
+        }
+
+        foreach (string n in Unwanted.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            sb.Append("unwanted\t").Append(Clean(n)).Append("\r\n");
         }
 
         foreach (ToolRecord t in Tools)

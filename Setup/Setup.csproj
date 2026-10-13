@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    setup.exe: creates or updates a kit (diagkit.<version>\ with DiagKit.exe, Uninstall.exe and the tools).
+    DiagKit.exe and Uninstall.exe are built first and embedded, so setup.exe is the only file to hand out.
+    Build it with:  dotnet build Setup -c Release    (the result is copied to Release\setup.exe)
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DiagKit.Setup</RootNamespace>
+    <AssemblyName>setup</AssemblyName>
+    <AssemblyTitle>DiagKit setup</AssemblyTitle>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\App\Assets\app.ico</ApplicationIcon>
+    <StartupObject>DiagKit.Setup.Program</StartupObject>
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Page Include="..\Shared\UI\Theme.xaml" Link="Themes\Theme.xaml" />
+    <Resource Include="..\App\Assets\app.ico" Link="Assets\app.ico" />
+  </ItemGroup>
+
+  <!-- Build DiagKit.exe and Uninstall.exe first; their outputs are embedded below. -->
+  <ItemGroup>
+    <ProjectReference Include="..\App\DiagKit.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <ProjectReference Include="..\Uninstall\Uninstall.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <Target Name="EmbedPayload" BeforeTargets="AssignTargetPaths" DependsOnTargets="ResolveProjectReferences">
+    <MSBuild Projects="..\App\DiagKit.csproj;..\Uninstall\Uninstall.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_Payload" />
+    </MSBuild>
+    <ItemGroup>
+      <EmbeddedResource Include="@(_Payload)" LogicalName="payload/%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyToRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MSBuildThisFileDirectory)..\Release" />
+    <Message Importance="high" Text="setup.exe -> $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\Release\setup.exe'))" />
+  </Target>
+
+</Project>
