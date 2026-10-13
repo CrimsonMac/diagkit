@@ -42,16 +42,21 @@ $StampName = '.diagkit-source'
 # Sources are tried in order until one downloads and verifies. Kinds:
 #   scoop   Scoop manifest (bucket/name): current version, URL and hash
 #   github  latest GitHub release: version from the tag, SHA-256 from GitHub's asset digest
+#   techpowerup  TechPowerUp's download form: version and SHA-256 from the download page, links from its mirror list
 #   url     fixed link; ETag/Last-Modified tell whether it changed
+# SaveAs: fixed file name for single-file tools, so an update replaces the old exe instead of adding a second one.
 # A download is only installed if it can be verified: by the source's hash, the tool's Signer, or both.
 # Mirrors: alternative hosts serving the same path; safe because the hash is checked.
 # Signer: the Authenticode signer every .exe/.dll must carry (certificate subject name, exact match).
 $Tools = @(
     @{ Name = 'HWiNFO64';         Folder = 'HWiNFO64';        Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/hwinfo' }) }
     @{ Name = 'CPU-Z';            Folder = 'CPU-Z';           Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/cpu-z' }) }
-    # TechPowerUp's mirrors refuse some regions/networks (404 or an HTML page); the hash makes trying others safe.
-    @{ Name = 'GPU-Z';            Folder = 'GPU-Z'
-       Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/gpu-z'; Mirrors = @('https://us1-dl.techpowerup.com', 'https://us2-dl.techpowerup.com') })
+    # TechPowerUp only serves GPU-Z through its download form (direct /files/ links return 404), so the form is
+    # the main source. The Scoop manifest stays as a second opinion with its own hash, in case the page changes.
+    @{ Name = 'GPU-Z';            Folder = 'GPU-Z';           Signer = 'TechPowerUp LLC'; SaveAs = 'GPU-Z.exe'
+       Sources = @(
+           @{ Kind = 'techpowerup'; Page = 'techpowerup-gpu-z'; File = '^GPU-Z\.(?<version>[\d.]+)\.exe$' }
+           @{ Kind = 'scoop'; Spec = 'Extras/gpu-z'; Mirrors = @('https://us1-dl.techpowerup.com', 'https://us2-dl.techpowerup.com') })
        Manual = 'Download it once from https://www.techpowerup.com/gpuz/ into tools\GPU-Z; the next run checks it against the same hash and marks it up to date.' }
     @{ Name = 'CrystalDiskInfo';  Folder = 'CrystalDiskInfo'; Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/crystaldiskinfo' }) }
     @{ Name = 'CrystalDiskMark';  Folder = 'CrystalDiskMark'; Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/crystaldiskmark' }) }
@@ -125,15 +130,68 @@ function Get-MirrorUrls([string]$Url, $Mirrors) {
     }
 }
 
-function Resolve-Source($Source) {
+function Get-TechPowerUpLinks([string]$Page, [string]$Id, [int]$Max) {
+    # Posting the file id returns the mirror list (closest first); posting id + server_id answers with a redirect
+    # to a short-lived link on that mirror. Only the first few mirrors are asked, each with one request.
+    $html = (Invoke-WebRequest -Uri $Page -Method Post -Body @{ id = $Id } -UseBasicParsing -UserAgent $UserAgent).Content
+    $servers = @([regex]::Matches($html, 'name="server_id" value="(\d+)"') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+    if ($servers.Count -eq 0) { throw 'The TechPowerUp download page listed no mirrors.' }
+
+    Add-Type -AssemblyName System.Net.Http
+    $handler = New-Object System.Net.Http.HttpClientHandler
+    $handler.AllowAutoRedirect = $false
+    $client = New-Object System.Net.Http.HttpClient($handler)
+    $client.Timeout = [TimeSpan]::FromSeconds(30)
+    $client.DefaultRequestHeaders.UserAgent.ParseAdd($UserAgent)
+    try {
+        foreach ($server in $servers | Select-Object -First $Max) {
+            try {
+                $form = New-Object 'System.Collections.Generic.Dictionary[string,string]'
+                $form['id'] = $Id
+                $form['server_id'] = $server
+                $response = $client.PostAsync($Page, (New-Object System.Net.Http.FormUrlEncodedContent($form))).GetAwaiter().GetResult()
+                if ($response.Headers.Location) { $response.Headers.Location.AbsoluteUri }
+            }
+            catch {
+                # This mirror did not answer; the next one might.
+            }
+        }
+    }
+    finally {
+        $client.Dispose()
+    }
+}
+
+function Resolve-Source($Source, $Tool) {
     # Turns a source entry into what to download: label, stamp, candidate URLs, hash, file name.
+    # TechPowerUp links cost one request per mirror, so they are only fetched when a download is needed.
     switch ($Source.Kind) {
+        'techpowerup' {
+            $page = "https://www.techpowerup.com/download/$($Source.Page)/"
+            $html = (Invoke-WebRequest -Uri $page -UseBasicParsing -UserAgent $UserAgent).Content
+            # Versions are listed newest first; each file entry carries its name, hashes and the form's file id.
+            foreach ($entry in [regex]::Matches($html, '(?s)<li class="file[^"]*">.*?</li>')) {
+                $file = [regex]::Match($entry.Value, 'class="filename"[^>]*>\s*([^<]+?)\s*<').Groups[1].Value
+                $m = [regex]::Match($file, $Source.File)
+                if (-not $m.Success) { continue }
+                $sha = [regex]::Match($entry.Value, '(?s)SHA256:</div>\s*<div class="hash-value">([0-9A-Fa-f]{64})<').Groups[1].Value
+                $id = [regex]::Match($entry.Value, 'name="id" value="(\d+)"').Groups[1].Value
+                if (-not $sha -or -not $id) { throw "The download page entry for $file has no SHA-256 or file id." }
+                $version = $m.Groups['version'].Value
+                return [pscustomobject]@{
+                    Label = "version $version"; Stamp = "techpowerup:$version"; Hash = "sha256:$sha"; ExtractDir = ''
+                    FileName = $(if ($Tool.SaveAs) { $Tool.SaveAs } else { $file })
+                    Urls = @(); TechPowerUp = [pscustomobject]@{ Page = $page; Id = $id }
+                }
+            }
+            throw "No file matching $($Source.File) on $page."
+        }
         'scoop' {
             $s = Resolve-ScoopSource (Get-ScoopManifest $Source.Spec)
             $dl = Split-DownloadUrl $s.Url
             return [pscustomobject]@{
                 Label = "version $($s.Version)"; Stamp = "scoop:$($s.Version)"; Hash = $s.Hash; ExtractDir = $s.ExtractDir
-                FileName = $dl.FileName; Urls = @(Get-MirrorUrls $dl.Url $Source.Mirrors)
+                FileName = $(if ($Tool.SaveAs) { $Tool.SaveAs } else { $dl.FileName }); Urls = @(Get-MirrorUrls $dl.Url $Source.Mirrors)
             }
         }
         'github' {
@@ -160,6 +218,7 @@ function Resolve-Source($Source) {
 function Get-SourceName($Source) {
     switch ($Source.Kind) {
         'scoop' { "Scoop manifest $($Source.Spec)" }
+        'techpowerup' { 'TechPowerUp download page' }
         'github' { "GitHub release $($Source.Repo)" }
         default { ([Uri]$Source.Url).Host }
     }
@@ -337,7 +396,7 @@ function Update-Tool($t) {
         $sourceName = Get-SourceName $s
         $more = $i -lt $sources.Count - 1
         try {
-            $src = Resolve-Source $s
+            $src = Resolve-Source $s $t
             if (-not $src.Hash -and -not $t.Signer) { throw 'This source has no hash and the tool has no signer to check, so the download cannot be verified.' }
             $label = $src.Label
             # Name the fallback source in the summary; plain links already show their host while downloading.
@@ -367,9 +426,11 @@ function Update-Tool($t) {
             $stage = Join-Path $Work ($t.Folder + "-$i")
             New-Item -ItemType Directory -Force -Path $stage | Out-Null
             $file = Join-Path $stage $src.FileName
-            Write-Host "    downloading $label from $(([Uri]$src.Urls[0]).Host)"
-            $used = Save-VerifiedDownload $src.Urls $file $src.Hash
-            if ($used -ne $src.Urls[0]) { Write-Host "    got it from $(([Uri]$used).Host)" }
+            $urls = @(if ($src.TechPowerUp) { Get-TechPowerUpLinks $src.TechPowerUp.Page $src.TechPowerUp.Id 6 } else { $src.Urls })
+            if ($urls.Count -eq 0) { throw 'No download link could be obtained.' }
+            Write-Host "    downloading $label from $(([Uri]$urls[0]).Host)"
+            $used = Save-VerifiedDownload $urls $file $src.Hash
+            if ($used -ne $urls[0]) { Write-Host "    got it from $(([Uri]$used).Host)" }
             if ($src.Hash) { Write-Host '    hash verified' }
 
             $content = Expand-Download $file $stage $src.ExtractDir $t.Pick
