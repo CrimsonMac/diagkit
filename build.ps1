@@ -1,15 +1,17 @@
 <#
 .SYNOPSIS
-    Builds DiagKit into a portable folder you can copy to a USB stick.
+    Builds DiagKit and downloads its tools into a portable folder you can copy to a USB stick.
 
 .EXAMPLE
-    .\build.ps1                      # single DiagKit.exe in .\dist\DiagKit
+    .\build.ps1                      # complete kit in .\dist\DiagKit: DiagKit.exe plus every tool
     .\build.ps1 -Output E:\DiagKit   # build straight onto the stick
     .\build.ps1 -Folder              # loose framework files: fastest startup, ~400 files
+    .\build.ps1 -NoTools             # only the app; run .\fetch-tools.ps1 later
 #>
 param(
     [string]$Output = (Join-Path $PSScriptRoot 'dist\DiagKit'),
-    [switch]$Folder
+    [switch]$Folder,
+    [switch]$NoTools
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,6 +60,21 @@ Copy-Item (Join-Path $PSScriptRoot 'TOOLS.md') (Join-Path $Output 'tools\README.
 $exe = Join-Path $Output 'DiagKit.exe'
 $size = [math]::Round((Get-Item $exe).Length / 1MB)
 Write-Host ""
-Write-Host "Done: $exe ($size MB)" -ForegroundColor Green
-Write-Host "Next: .\fetch-tools.ps1 -Kit '$Output' downloads every tool except TestMem5 (see tools\README.md)."
-Write-Host "Rebuilding later never touches tools\ or reports\, so the tools only need downloading once."
+Write-Host "Built: $exe ($size MB)" -ForegroundColor Green
+Write-Host "Rebuilding later never touches tools\ or reports\."
+
+if ($NoTools) {
+    Write-Host "Skipped the tools. .\fetch-tools.ps1 -Kit '$Output' downloads or updates them (see tools\README.md)."
+    return
+}
+
+# One command gives a complete kit. fetch-tools only downloads what is missing or has a new version,
+# so running the build again is cheap.
+Write-Host ""
+Write-Host "Fetching the tools ..." -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot 'fetch-tools.ps1') -Kit $Output
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Some tools could not be downloaded (see the table above). DiagKit works without them; run .\fetch-tools.ps1 -Kit '$Output' again later."
+    exit 1
+}
+Write-Host "Kit ready: $Output" -ForegroundColor Green
