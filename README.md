@@ -2,37 +2,75 @@
 
 A portable launcher for Windows diagnostic tools, plus a health check that reads drive health, crash history, hardware errors, temperatures and startup entries and explains what it finds in plain language.
 
-Built for a USB stick: one exe, a `tools` folder, and a `reports` folder that travels with it.
+It is built for a USB stick: one small exe, the tools next to it, and reports that travel with the stick. When you are done with a PC, Uninstall.exe removes what DiagKit and its tools left on it.
 
-## Build
+## Getting a kit
 
-You need the [.NET SDK](https://dotnet.microsoft.com/download) on the machine you build on. DiagKit targets .NET Framework 4.8, which is part of Windows 10 (1903 and later) and Windows 11, so the PCs you diagnose need nothing extra.
+Run **setup.exe** (see [Building](#building) for how to get it).
 
-```powershell
-.\build.ps1 -Output E:\DiagKit        # build onto the stick and download every tool (hash/signature verified)
-.\fetch-tools.ps1 -Kit E:\DiagKit     # later: update the tools without rebuilding
+1. **Pick the location.** USB sticks are listed as one-click choices; **Change…** picks any folder. Setup creates `diagkit.<version>` inside it. Pick a folder that already holds a kit, or the kit itself, and setup updates that kit instead.
+2. **Tick the tools.** All of them are ticked for a new kit, about 110 MB in total. The ones the health check needs can't be unticked. On an existing kit, unticking a tool removes it, and setup remembers that choice next time.
+3. **Install.** Three downloads run at a time. Every file is checked against its publisher's hash or signature before it goes into the kit, and each tool has fallback sources in case a site is down. See [TOOLS.md](TOOLS.md) for the details.
+
+Run setup again whenever you like: it only downloads tools that have a new release. Updating a kit renames the folder to the new version. Tools you added to the kit yourself, and your reports, are kept.
+
+Setup needs no administrator rights and leaves nothing on the PC it runs on.
+
+```
+setup.exe [/target <folder>] [/tools name,name] [/force] [/quiet]
+  /target   where the kit goes: an existing kit, or a folder to create diagkit.<version> in
+  /tools    update only these tools and leave the rest of the kit as it is
+  /force    download every tool again, even when it is up to date
+  /quiet    no window; logs to setup.log next to setup.exe; exit code 0 when every tool installed
 ```
 
-Every tool has fallback sources, so one site being down doesn't stop setup. Run `fetch-tools.ps1` again whenever you like; it only downloads tools that have a new release, and `-Check` lists available updates without downloading. See [TOOLS.md](TOOLS.md) for sources and how each download is verified. The kit layout:
+The kit:
 
 ```
-DiagKit\
-  DiagKit.exe            single-file app (runs as administrator); everything it needs is inside
-  tools.json             tool list, created on first run, editable
-  tools\<Tool>\...       the portable tools
-  reports\<PC>_<date>\   report.html, report.json, raw\
+diagkit.1.1.0\
+  DiagKit.exe           the app (runs as administrator); one file, about 4.5 MB
+  Uninstall.exe         cleans this PC and/or removes the kit
+  Tools\                one folder per tool, plus tools.json (the tool list, editable)
+  Reports\<PC>_<date>\  report.html, report.json, raw\
+  .diagkit              hidden record of what DiagKit installed, for Uninstall.exe
 ```
 
-For development, open `DiagKit.slnx` in Visual Studio 2026 or Rider, or run `dotnet run --project App`. Visual Studio has to run elevated, because the app manifest requires administrator rights.
+DiagKit runs on .NET Framework 4.8, which is part of Windows 10 (1903 and later) and Windows 11, so the PCs you diagnose need nothing extra.
+
+## Removing DiagKit
+
+**Uninstall.exe**, in the kit or behind the button at the bottom of DiagKit's navigation rail, offers two modes:
+
+- **Remove DiagKit completely.** Deletes the kit and cleans this PC. Files you added to the kit are listed and kept, and the kit folder is only removed once it is empty.
+- **Only clean this PC.** Cleans this PC and keeps the kit for the next one, for example when you're done with a customer's PC.
+
+Cleaning a PC removes only what DiagKit put there:
+- Registry keys, driver services and temp files a tool left behind.
+- The PawnIO driver, but only on a PC where DiagKit's health check installed it. It is optional, and listed with the date it was installed.
+- Windows' records of programs that ran from the kit folder: Prefetch, Explorer's launch history and program-name cache, compatibility records, background-activity entries, taskbar/jump-list data and Recent Items. These are matched on the kit's path, under its current or former names and any drive letter, so the same tool run from anywhere else keeps its records.
+- The runtime files older DiagKit versions unpacked to `%TEMP%`, and reports DiagKit saved on this PC when the kit was read-only (optional).
+
+Anything that was there before DiagKit is left alone. If the PC owner already has GPU-Z (or Process Explorer, HWiNFO…), its program files, settings and driver are never touched. DiagKit can tell the difference because of three things:
+- **Its own record.** Setup records every file and tool folder it installs, the health check records a PawnIO install, and launches record any registry key a tool creates.
+- **Snapshots around each launch.** Before a tool starts, DiagKit notes which of its registry keys and driver services already exist. Afterwards it deletes only the new ones, and puts pre-existing keys back exactly as they were.
+- **Path matching.** Windows' records are matched on the kit's path, never on a program's name.
+
+Windows' own system databases (Amcache, ShimCache, SRUM and the event logs) also note that programs ran. Uninstall leaves those alone, because editing them could damage Windows.
+
+The record lives in the kit, so other PCs the kit was used on can only be cleaned there. Uninstall names them before it deletes the kit.
 
 ## Using it
 
 **Tools** (Ctrl+1). Click a tile to launch the tool.
+- Hover a tile (or tab to it) and it expands in place to show the full description, where the tool lives, and a button for its folder. The folder is handy for TestMem5 configs: anta777's Extreme loads by default and Absolut is in `bin`.
 - Ctrl+F searches; Enter launches the first match and Esc clears the search.
 - Missing tools show where their file goes, and clicking one opens that folder.
-- Hover a tile for its folder button, which is handy for TestMem5 configs (anta777's Extreme loads by default; Absolut is in `bin`).
 - DiagKit explains launch failures: Defender quarantine, Smart App Control, a blocked driver, or a tool that closes immediately.
-- Registry keys a tool creates (Sysinternals EULA flags, GPU-Z settings) are removed when it exits, but only if they did not exist before. The PC owner's own settings are never touched.
+- When a tool closes, DiagKit undoes what it left behind:
+  - registry keys the tool created are removed, and keys that already existed are restored to how they were;
+  - driver services the tool installed are removed, along with their driver files.
+
+  If that can't happen yet (DiagKit was closed first, or a driver is still loaded), it is finished at DiagKit's next start or by Uninstall.
 
 **Health** (Ctrl+2, F5 from anywhere) runs these steps:
 
@@ -62,45 +100,56 @@ The rules turn the data into findings, each with a severity, a plain explanation
 
 `Examples\sample-report.html` shows what a report for a troubled PC looks like.
 
-## Why it opens fast
+## Why it's small and fast
 
-- **No runtime to load.** DiagKit runs on the .NET Framework that ships with Windows, whose WPF is already precompiled. The exe is about 5 MB instead of a 150 MB self-contained bundle, which matters most on a slow USB stick.
-- **One file, no extraction.** The libraries DiagKit uses are embedded in the exe and loaded from memory, so nothing is unpacked to `%TEMP%` and no trace is left on the PC.
-- **No UI framework dependency.** The theme is plain WPF styles, so no third-party resource dictionaries are parsed at startup.
-- **The window renders before any disk work.** The manifest is read, tools are searched recursively and exe icons are extracted on background threads, and the icons are cached per session.
-- **Lazy work.** Pages are created on first visit. The sensor driver library is only loaded when a health check starts.
+- **No runtime to carry.** DiagKit uses the .NET Framework built into Windows, whose WPF is already precompiled. That makes the exe about 4.5 MB instead of a 150 MB self-contained bundle, which matters most on a slow USB stick.
+- **One file, nothing unpacked.** The libraries DiagKit uses are embedded in the exe and loaded from memory, so nothing is extracted to `%TEMP%`.
+- **Only the builds that run.** Setup leaves out the 32-bit and ARM64 copies many tools ship alongside their 64-bit exe, about 55 MB per kit.
+- **The window renders before any disk work.** The tool list is read, tools are searched and icons are extracted on background threads, and the icons are cached per session.
+- **No animations on hover.** Tiles expand instantly, and the theme is plain WPF styles with no third-party UI framework.
+- **Lazy work.** Pages are created on first visit. The sensor library is only loaded when a health check starts.
 - **Collectors never touch the UI thread.** The window stays responsive during a load test because the load threads run at below-normal priority.
+
+## Building
+
+You need the [.NET SDK](https://dotnet.microsoft.com/download) (8 or later) on Windows. It builds the .NET Framework 4.8 programs using reference assemblies from NuGet, so no Visual Studio workload is needed.
+
+```powershell
+dotnet build Setup -c Release      # builds DiagKit.exe and Uninstall.exe, embeds them: Release\setup.exe
+```
+
+`Release\setup.exe` is the only file to hand out. For development, open `DiagKit.slnx` in Visual Studio or Rider. Visual Studio has to run elevated, because DiagKit and Uninstall require administrator rights.
+
+Repository layout:
+
+```
+App\          DiagKit.exe: the launcher and health check
+  Views\, ViewModels\, Services\  UI and tool launching (registry/driver cleanup, tool discovery)
+  Report\     health-check collectors, rules, HTML/JSON report
+  tools.default.json              the built-in tool list, written out as Tools\tools.json
+Setup\        setup.exe: tool catalog and sources, download and verification, kit creation
+Uninstall\    Uninstall.exe: removal of the kit and of DiagKit's traces on a PC
+Shared\       used by all three
+  Kit\        the kit ledger, layout names, trace cleanup, PawnIO
+  UI\         theme, LED control, view-model helpers
+Examples\     a sample health-check report
+Release\      build output: setup.exe (not in git)
+.build\       intermediate build files (not in git)
+```
 
 ## Testing status
 
-This was compiled and tested on Linux against the real WPF, WMI, EventLog and LibreHardwareMonitor 0.9.6 assemblies. That covers:
-- the full build including XAML, with zero warnings;
-- all 135 XAML bindings, checked by reflection against the view models;
-- the rules engine, against synthetic healthy, failing and empty reports;
-- tool discovery, manifest error handling, runner timeouts and cancellation, and the JSON round-trip.
+Tested on Windows 11 24H2 with non-elevated test builds:
+- the Tools page, the hover expansion and the health check with GPU sensors read through the embedded LibreHardwareMonitor;
+- registry cleanup: a created key was removed, an existing key restored, and a control tool without trace rules left its key in place;
+- setup: a new kit, an update, a GUI install with a tool unticked, an upgrade of a kit made by the old build script, and every fallback, by blocking the main hosts in a debug build;
+- Uninstall against a kit with planted traces, which removed exactly the kit's entries and kept the user's files and other programs' records. Prefetch decoding was round-trip tested.
 
-**It has not been run on Windows yet.** Windows-only behaviour is written against documented APIs but unverified until a first real run. That includes:
-- WMI queries and event log XPath;
-- `smartctl`, BlueScreenView and `autorunsc` output parsing;
-- the window chrome;
-- sensor readings.
+Not yet exercised, because they need administrator rights or a PC without PawnIO:
+- the PawnIO silent install and uninstall;
+- removing driver services;
+- deleting Prefetch and background-activity entries.
 
-If DiagKit fails to start, it shows an error box and writes `diagkit-error.log` next to the exe (or in `%TEMP%` when the kit is read-only). If even that doesn't appear, check Event Viewer > Windows Logs > Application for "Application Error" and ".NET Runtime" entries. If something misbehaves later, `diagkit-error.log` has the stack trace, and each report's `raw\` folder has the tool output the parsers saw.
+These use documented Windows APIs and fail safely: anything that can't be removed is reported and retried later.
 
-## Project layout
-
-```
-App\
-  App.xaml, MainWindow.xaml     shell: title bar, navigation rail, notices
-  Themes\Theme.xaml             palette, type, LED control, all control styles
-  Views\                        Tools, Health (setup/progress/results), Report, History
-  ViewModels\                   WPF-free view models
-  Services\                     tool discovery, launching, registry cleanup, elevation/PawnIO probes
-  Report\
-    Collectors\                 one class per health-check step
-    Rules\HealthRules.cs        findings: severity, explanation, action, evidence
-    ReportRunner.cs             phases, parallelism, timeouts, cancellation
-    ReportFacts.cs              verdict/spec sheet/tables shared by app and HTML
-    HtmlReportWriter.cs         self-contained HTML export
-  tools.default.json            built-in tool list, written out as tools.json
-```
+If DiagKit fails to start, it shows an error box and writes `diagkit-error.log` next to the exe (or in `%TEMP%` when the kit is read-only). If something misbehaves later, `diagkit-error.log` has the stack trace, and each report's `raw\` folder has the tool output the parsers saw.
