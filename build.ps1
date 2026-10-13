@@ -15,7 +15,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$project = Join-Path $PSScriptRoot 'src\DiagKit\DiagKit.csproj'
+$project = Join-Path $PSScriptRoot 'App\DiagKit.csproj'
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
     throw 'The .NET SDK is not installed. Get the .NET 10 SDK from https://dotnet.microsoft.com/download/dotnet/10.0'
@@ -52,7 +52,7 @@ Write-Host "Publishing DiagKit to $Output ..." -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { throw 'Build failed; see the output above.' }
 
 # Create the tools\ folders now so they can be filled before the first launch (DiagKit also does this itself).
-$manifest = Get-Content (Join-Path $PSScriptRoot 'src\DiagKit\tools.default.json') -Raw
+$manifest = Get-Content (Join-Path $PSScriptRoot 'App\tools.default.json') -Raw
 $folders = [regex]::Matches($manifest, '"folder"\s*:\s*"([^"]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
 foreach ($f in $folders) { New-Item -ItemType Directory -Force -Path (Join-Path $Output "tools\$f") | Out-Null }
 Copy-Item (Join-Path $PSScriptRoot 'TOOLS.md') (Join-Path $Output 'tools\README.md') -Force

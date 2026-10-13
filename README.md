@@ -23,7 +23,7 @@ DiagKit\
   reports\<PC>_<date>\   report.html, report.json, raw\
 ```
 
-For development, open `src\DiagKit\DiagKit.csproj` in Visual Studio 2026 or Rider, or run `dotnet run --project src\DiagKit`. Visual Studio has to run elevated, because the app manifest requires administrator rights.
+For development, open `DiagKit.slnx` in Visual Studio 2026 or Rider, or run `dotnet run --project App`. Visual Studio has to run elevated, because the app manifest requires administrator rights.
 
 ## Using it
 
@@ -60,7 +60,7 @@ The rules turn the data into findings, each with a severity, a plain explanation
 - `report.json`: the full structured data.
 - `raw\`: every tool's original output.
 
-`docs\sample-report.html` shows what a report for a troubled PC looks like.
+`Examples\sample-report.html` shows what a report for a troubled PC looks like.
 
 ## Why it opens fast
 
@@ -92,7 +92,7 @@ If DiagKit fails to start, it shows an error box and writes `diagkit-error.log` 
 ## Project layout
 
 ```
-src\DiagKit\
+App\
   App.xaml, MainWindow.xaml     shell: title bar, navigation rail, notices
   Themes\Theme.xaml             palette, type, LED control, all control styles
   Views\                        Tools, Health (setup/progress/results), Report, History
