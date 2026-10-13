@@ -63,6 +63,7 @@ public sealed class MainViewModel : ObservableObject
     public ICommand RunCheckCommand { get; }
     public bool IsElevated { get; }
     public string MachineName => Environment.MachineName;
+    public string VersionText => "v" + AppInfo.Version;
     public string ElevationText => IsElevated ? "Administrator" : "Not elevated: some tools and checks will fail";
 
     public AppPage Page

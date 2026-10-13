@@ -80,7 +80,7 @@
                     <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE81C;" Content="Reports"
                                  IsChecked="{Binding IsHistoryPage, Mode=TwoWay}" ToolTip="Saved reports (Ctrl+3)" />
                 </StackPanel>
-                <TextBlock DockPanel.Dock="Bottom" Text="v1.0" Style="{StaticResource Text.Faint}" HorizontalAlignment="Center"
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionText}" Style="{StaticResource Text.Faint}" HorizontalAlignment="Center"
                            VerticalAlignment="Bottom" Margin="0,0,0,14" />
             </DockPanel>
         </Border>
