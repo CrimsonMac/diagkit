@@ -33,8 +33,12 @@ public partial class MainWindow : Window
             NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
             int round = NativeMethods.DWMWCP_ROUND;
             NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));
-            int border = 0x0042362F; // COLORREF is BGR: the theme Line colour #2F3642.
-            NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.DWMWA_BORDER_COLOR, ref border, sizeof(int));
+            if (TryFindResource("Line") is SolidColorBrush line)
+            {
+                // COLORREF is 0x00BBGGRR.
+                int border = line.Color.R | (line.Color.G << 8) | (line.Color.B << 16);
+                NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.DWMWA_BORDER_COLOR, ref border, sizeof(int));
+            }
         }
         catch
         {
