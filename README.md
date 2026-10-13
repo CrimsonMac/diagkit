@@ -232,4 +232,8 @@ All product names and trademarks belong to their owners. DiagKit is not affiliat
 
 ### DiagKit itself
 
-DiagKit's own source code does not have a license yet. One will be added before the first public release.
+Copyright (C) 2026 CrimsonMac. DiagKit is free software, licensed under the [GNU General Public License v3.0](LICENSE).
+
+In short: you may use, study, change and share DiagKit, including commercially. Any version you distribute, changed or not, must also be under GPL-3.0, with its source code available. DiagKit comes with no warranty.
+
+The GPL covers DiagKit's own code only. The tools setup downloads keep their own licenses, as described above.

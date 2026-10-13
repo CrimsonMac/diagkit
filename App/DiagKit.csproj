@@ -15,7 +15,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>DiagKit</RootNamespace>
     <AssemblyName>DiagKit</AssemblyName>
-    <Copyright>DiagKit contributors</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Program.Main wraps WPF startup so early failures are logged instead of silently killing the process. -->
     <StartupObject>DiagKit.Program</StartupObject>
