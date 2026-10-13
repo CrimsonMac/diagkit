@@ -118,8 +118,8 @@ public sealed class SetupViewModel : ObservableObject
         SelectAllCommand = new RelayCommand(() => SetAll(true));
         SelectNoneCommand = new RelayCommand(() => SetAll(false));
         CloseCommand = new RelayCommand(() => Application.Current?.MainWindow?.Close());
-        OpenKitCommand = new RelayCommand(() => Start(Path.Combine(KitDir, KitLayout.AppExe)));
-        OpenFolderCommand = new RelayCommand(() => Start(KitDir));
+        OpenKitCommand = new RelayCommand(() => StartAndClose(Path.Combine(KitDir, KitLayout.AppExe)));
+        OpenFolderCommand = new RelayCommand(() => StartAndClose(KitDir));
         CancelCommand = new RelayCommand(() => _cts?.Cancel());
         Parent = parent;
     }
@@ -379,7 +379,8 @@ public sealed class SetupViewModel : ObservableObject
 
     private static void Dispatch(Action a) => Application.Current?.Dispatcher.BeginInvoke(a);
 
-    private static void Start(string path)
+    /// <summary>Setup has nothing left to do once the kit or its folder is open, so it closes; on failure it stays open.</summary>
+    private static void StartAndClose(string path)
     {
         try
         {
@@ -388,7 +389,10 @@ public sealed class SetupViewModel : ObservableObject
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "DiagKit setup", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
         }
+
+        Application.Current?.MainWindow?.Close();
     }
 }
 
