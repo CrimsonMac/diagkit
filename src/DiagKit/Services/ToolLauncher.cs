@@ -52,8 +52,15 @@ public static class ToolLauncher
 
         Process proc = process;
         var exited = new TaskCompletionSource<int?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        int exitHandled = 0;
         void OnExit()
         {
+            // Both the Exited event and the HasExited check below can get here; only the first one counts.
+            if (Interlocked.Exchange(ref exitHandled, 1) != 0)
+            {
+                return;
+            }
+
             int? code = null;
             try
             {
@@ -64,14 +71,18 @@ public static class ToolLauncher
                 // Exit code unavailable (process handle already gone).
             }
 
-            if (guard.HasWork)
+            if (!guard.HasWork)
             {
-                // Give the tool a moment to finish flushing its settings before deleting them.
-                Thread.Sleep(300);
-                guard.Cleanup();
+                exited.TrySetResult(code);
+                return;
             }
 
-            exited.TrySetResult(code);
+            // Give the tool a moment to finish flushing its settings before deleting them.
+            Task.Delay(300).ContinueWith(_ =>
+            {
+                guard.Cleanup();
+                exited.TrySetResult(code);
+            }, TaskScheduler.Default);
         }
 
         proc.EnableRaisingEvents = true;
