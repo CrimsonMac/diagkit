@@ -26,6 +26,7 @@ public static class ToolLauncher
 
     public static LaunchOutcome Start(ToolDefinition tool, string exePath, string? extraArguments = null)
     {
+        ToolFixups.BeforeLaunch(tool, exePath);
         RegistryTraceGuard guard = RegistryTraceGuard.Capture(tool.RegistryTraces, tool.RegistryParents);
         string args = string.Join(" ", new[] { tool.Arguments, extraArguments }).Trim();
         string workDir = Path.GetDirectoryName(exePath) ?? AppPaths.BaseDir;

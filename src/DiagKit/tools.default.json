@@ -77,7 +77,7 @@
       "id": "testmem5",
       "name": "TestMem5",
       "category": "Memory and stability",
-      "description": "RAM stress test inside Windows. Load the anta777 or 1usmus config for meaningful coverage.",
+      "description": "RAM stress test inside Windows. Starts with anta777's Extreme config; load absolut@anta777.cfg from bin for a longer run.",
       "folder": "TestMem5",
       "executables": [ "TM5.exe" ]
     },
