@@ -6,9 +6,10 @@
     Every tool has a list of sources that are tried in order, so one site being down does not stop the kit
     from updating. Most tools have versioned download URLs, so instead of hard-coding them this script reads
     the community-maintained Scoop manifests (github.com/ScoopInstaller), which carry the current URL and a
-    hash for each release. Scoop itself is NOT needed or installed. Every download is verified:
-      - Scoop sources: against the manifest's hash
-      - Sysinternals: against Microsoft's Authenticode signature
+    hash for each release. Scoop itself is NOT needed or installed. Every download is verified before
+    anything is copied into the kit, and a source that cannot be verified is skipped:
+      - against a hash published by the source (Scoop manifest, GitHub release digest)
+      - and/or against the publisher's Authenticode signature (Sysinternals, NirSoft, PawnIO)
     Each tool folder gets a .diagkit-source stamp, so re-running only downloads what changed.
     Existing .ini/.cfg files are never overwritten, so tool settings survive updates.
 
@@ -39,8 +40,10 @@ $StampName = '.diagkit-source'
 
 # Folder names match tools.json, so DiagKit finds everything on the next Rescan.
 # Sources are tried in order until one downloads and verifies. Kinds:
-#   scoop  Scoop manifest (bucket/name): current version, URL and hash
-#   url    fixed link; ETag/Last-Modified tell whether it changed
+#   scoop   Scoop manifest (bucket/name): current version, URL and hash
+#   github  latest GitHub release: version from the tag, SHA-256 from GitHub's asset digest
+#   url     fixed link; ETag/Last-Modified tell whether it changed
+# A download is only installed if it can be verified: by the source's hash, the tool's Signer, or both.
 # Mirrors: alternative hosts serving the same path; safe because the hash is checked.
 # Signer: the Authenticode signer every .exe/.dll must carry (certificate subject name, exact match).
 $Tools = @(
@@ -58,8 +61,15 @@ $Tools = @(
     @{ Name = 'Autoruns';         Folder = 'Autoruns';        Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/Autoruns.zip' }) }
     @{ Name = 'Process Explorer'; Folder = 'ProcessExplorer'; Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/ProcessExplorer.zip' }) }
     @{ Name = 'RAMMap';           Folder = 'RAMMap';          Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/RAMMap.zip' }) }
-    @{ Name = 'BlueScreenView';   Folder = 'BlueScreenView';  Sources = @(@{ Kind = 'url'; Url = 'https://www.nirsoft.net/utils/bluescreenview-x64.zip' }) }
-    @{ Name = 'PawnIO setup';     Folder = 'PawnIO';          Sources = @(@{ Kind = 'url'; Url = 'https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe' }) }
+    @{ Name = 'BlueScreenView';   Folder = 'BlueScreenView';  Signer = 'Nir Sofer'
+       Sources = @(
+           @{ Kind = 'scoop'; Spec = 'Nirsoft/bluescreenview' }
+           @{ Kind = 'url'; Url = 'https://www.nirsoft.net/utils/bluescreenview-x64.zip' }) }
+    @{ Name = 'PawnIO setup';     Folder = 'PawnIO';          Signer = 'namazso.eu'
+       Sources = @(
+           @{ Kind = 'github'; Repo = 'namazso/PawnIO.Setup'; Asset = '^PawnIO_setup\.exe$' }
+           # The API is rate-limited (60 requests/hour without a token); the plain "latest" link is not.
+           @{ Kind = 'url'; Url = 'https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe' }) }
 )
 
 # ------------------------------------------------------------------ helpers
@@ -126,6 +136,16 @@ function Resolve-Source($Source) {
                 FileName = $dl.FileName; Urls = @(Get-MirrorUrls $dl.Url $Source.Mirrors)
             }
         }
+        'github' {
+            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$($Source.Repo)/releases/latest" -UserAgent $UserAgent
+            $asset = @($rel.assets | Where-Object { $_.name -match $Source.Asset }) | Select-Object -First 1
+            if (-not $asset) { throw "Release $($rel.tag_name) has no file matching $($Source.Asset)." }
+            $hash = if ("$($asset.digest)" -match '^sha256:([0-9a-fA-F]{64})$') { "sha256:$($Matches[1])" } else { '' }
+            return [pscustomobject]@{
+                Label = "version $($rel.tag_name)"; Stamp = "github:$($rel.tag_name)"; Hash = $hash; ExtractDir = ''
+                FileName = $asset.name; Urls = @($asset.browser_download_url)
+            }
+        }
         'url' {
             $dl = Split-DownloadUrl $Source.Url
             return [pscustomobject]@{
@@ -140,6 +160,7 @@ function Resolve-Source($Source) {
 function Get-SourceName($Source) {
     switch ($Source.Kind) {
         'scoop' { "Scoop manifest $($Source.Spec)" }
+        'github' { "GitHub release $($Source.Repo)" }
         default { ([Uri]$Source.Url).Host }
     }
 }
@@ -317,8 +338,10 @@ function Update-Tool($t) {
         $more = $i -lt $sources.Count - 1
         try {
             $src = Resolve-Source $s
+            if (-not $src.Hash -and -not $t.Signer) { throw 'This source has no hash and the tool has no signer to check, so the download cannot be verified.' }
             $label = $src.Label
-            if ($i -gt 0) { $label += " via $sourceName" }
+            # Name the fallback source in the summary; plain links already show their host while downloading.
+            if ($i -gt 0) { $label += if ($s.Kind -eq 'url') { ' (fallback link)' } else { " via $sourceName" } }
 
             $upToDate = $present -and $src.Stamp -and ($current -eq $src.Stamp)
             if (-not $upToDate -and -not $Force -and $src.Hash) {
