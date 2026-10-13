@@ -43,7 +43,11 @@ $StampName = '.diagkit-source'
 #   scoop   Scoop manifest (bucket/name): current version, URL and hash
 #   github  latest GitHub release: version from the tag, SHA-256 from GitHub's asset digest
 #   techpowerup  TechPowerUp's download form: version and SHA-256 from the download page, links from its mirror list
+#   sourceforge  newest file matching Pattern in a SourceForge folder (from its RSS feed); no hash, so needs a Signer
+#   files   several single files from one base URL (Sysinternals Live); needs a Signer
 #   url     fixed link; ETag/Last-Modified tell whether it changed
+# Hash-verified downloads also try, in order: AltUrls ({version} / {version_} with dots as underscores),
+# SourceForge's master.dl host for SourceForge files, Mirrors, and finally the Wayback Machine's copy of the URL.
 # SaveAs: fixed file name for single-file tools, so an update replaces the old exe instead of adding a second one.
 # FileHashes: pinned SHA-256 per file, for tools with neither a published hash nor a signature.
 # Extras: extra files from a GitHub repo at a fixed commit (raw.githubusercontent.com, then jsDelivr), hash-checked.
@@ -51,7 +55,11 @@ $StampName = '.diagkit-source'
 # Mirrors: alternative hosts serving the same path; safe because the hash is checked.
 # Signer: the Authenticode signer every .exe/.dll must carry (certificate subject name, exact match).
 $Tools = @(
-    @{ Name = 'HWiNFO64';         Folder = 'HWiNFO64';        Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/hwinfo' }) }
+    # HWiNFO's own site is behind a browser challenge; its SourceForge folder lags a few versions but is official.
+    @{ Name = 'HWiNFO64';         Folder = 'HWiNFO64';        Signer = 'REALiX, s.r.o.'
+       Sources = @(
+           @{ Kind = 'scoop'; Spec = 'Extras/hwinfo' }
+           @{ Kind = 'sourceforge'; Project = 'hwinfo'; Path = 'Windows_Portable'; Pattern = '^hwi_\d+\.zip$' }) }
     @{ Name = 'CPU-Z';            Folder = 'CPU-Z';           Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/cpu-z' }) }
     # TechPowerUp only serves GPU-Z through its download form (direct /files/ links return 404), so the form is
     # the main source. The Scoop manifest stays as a second opinion with its own hash, in case the page changes.
@@ -64,10 +72,23 @@ $Tools = @(
     @{ Name = 'CrystalDiskMark';  Folder = 'CrystalDiskMark'; Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/crystaldiskmark' }) }
     @{ Name = 'WizTree';          Folder = 'WizTree';         Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/wiztree' }) }
     @{ Name = 'Everything';       Folder = 'Everything';      Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/everything' }) }
-    @{ Name = 'smartctl';         Folder = 'smartmontools';   Pick = 'smartctl.exe'; Sources = @(@{ Kind = 'scoop'; Spec = 'Main/smartmontools' }) }
-    @{ Name = 'Autoruns';         Folder = 'Autoruns';        Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/Autoruns.zip' }) }
-    @{ Name = 'Process Explorer'; Folder = 'ProcessExplorer'; Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/ProcessExplorer.zip' }) }
-    @{ Name = 'RAMMap';           Folder = 'RAMMap';          Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/RAMMap.zip' }) }
+    # smartmontools publishes the same installer on GitHub releases, so the manifest's hash covers both.
+    @{ Name = 'smartctl';         Folder = 'smartmontools';   Pick = 'smartctl.exe'
+       Sources = @(@{ Kind = 'scoop'; Spec = 'Main/smartmontools'
+                      AltUrls = @('https://github.com/smartmontools/smartmontools/releases/download/RELEASE_{version_}/smartmontools-{version}.win32-setup.exe') }) }
+    # Sysinternals Live serves the same signed executables one by one when the zip download is unavailable.
+    @{ Name = 'Autoruns';         Folder = 'Autoruns';        Signer = 'Microsoft Corporation'
+       Sources = @(
+           @{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/Autoruns.zip' }
+           @{ Kind = 'files'; Base = 'https://live.sysinternals.com/'; Files = @('Autoruns.exe', 'Autoruns64.exe', 'autorunsc.exe', 'autorunsc64.exe') }) }
+    @{ Name = 'Process Explorer'; Folder = 'ProcessExplorer'; Signer = 'Microsoft Corporation'
+       Sources = @(
+           @{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/ProcessExplorer.zip' }
+           @{ Kind = 'files'; Base = 'https://live.sysinternals.com/'; Files = @('procexp.exe', 'procexp64.exe') }) }
+    @{ Name = 'RAMMap';           Folder = 'RAMMap';          Signer = 'Microsoft Corporation'
+       Sources = @(
+           @{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/RAMMap.zip' }
+           @{ Kind = 'files'; Base = 'https://live.sysinternals.com/'; Files = @('RAMMap.exe', 'RAMMap64.exe') }) }
     # TestMem5 is unsigned and its author publishes no hashes, so its two binaries are pinned to the known v0.12
     # builds (testmem.tz.ru has shipped two TM5.exe builds). Any other code in the archive is refused.
     # The Wayback Machine copy is the fallback; the pinned hashes make an archived copy as safe as the original.
@@ -137,12 +158,22 @@ function Split-DownloadUrl([string]$Url) {
     [pscustomobject]@{ Url = $Url; FileName = $name }
 }
 
-function Get-MirrorUrls([string]$Url, $Mirrors) {
-    # The same path on each mirror host, without repeating a host already in the list (http and https count as one).
+function Get-MirrorUrls([string]$Url, $Mirrors, $AltUrls, [string]$Version) {
+    # Every place the same file can come from. Only used for hash-verified downloads, so any copy is as good as the original.
+    # Hosts already in the list are not repeated (http and https count as one).
     $list = @($Url)
+    foreach ($alt in @($AltUrls)) {
+        if ($alt) { $list += $alt.Replace('{version_}', $Version.Replace('.', '_')).Replace('{version}', $Version) }
+    }
+    if ($Url -match '^https?://downloads\.sourceforge\.net/project/(.+)$') {
+        # Skips SourceForge's mirror-picking redirector, which is the part that usually fails.
+        $list += "https://master.dl.sourceforge.net/project/$($Matches[1])?viasf=1"
+    }
     foreach ($mirror in @($Mirrors)) {
         if ($mirror) { $list += $mirror.TrimEnd('/') + ([Uri]$Url).PathAndQuery }
     }
+    # Last resort: the Wayback Machine's newest copy of the original link (id_ returns the file unmodified).
+    $list += "https://web.archive.org/web/$((Get-Date).ToString('yyyyMMdd'))id_/$Url"
     $seen = @{}
     foreach ($u in $list) {
         $key = ([Uri]$u).Host.ToLowerInvariant() + ([Uri]$u).PathAndQuery
@@ -211,7 +242,33 @@ function Resolve-Source($Source, $Tool) {
             $dl = Split-DownloadUrl $s.Url
             return [pscustomobject]@{
                 Label = "version $($s.Version)"; Stamp = "scoop:$($s.Version)"; Hash = $s.Hash; ExtractDir = $s.ExtractDir
-                FileName = $(if ($Tool.SaveAs) { $Tool.SaveAs } else { $dl.FileName }); Urls = @(Get-MirrorUrls $dl.Url $Source.Mirrors)
+                FileName = $(if ($Tool.SaveAs) { $Tool.SaveAs } else { $dl.FileName })
+                Urls = @(Get-MirrorUrls $dl.Url $Source.Mirrors $Source.AltUrls $s.Version)
+            }
+        }
+        'sourceforge' {
+            $feed = "https://sourceforge.net/projects/$($Source.Project)/rss?path=/$($Source.Path)"
+            [xml]$rss = (Invoke-WebRequest -Uri $feed -UseBasicParsing -UserAgent $UserAgent).Content
+            # The feed lists files newest first; titles are paths like /Windows_Portable/hwi_834.zip.
+            foreach ($item in @($rss.rss.channel.item)) {
+                $title = if ($item.title -is [string]) { $item.title } else { $item.title.'#cdata-section' }
+                $name = [IO.Path]::GetFileName("$title")
+                if ($name -notmatch $Source.Pattern) { continue }
+                $path = "$($Source.Project)/$($Source.Path)/$name"
+                return [pscustomobject]@{
+                    Label = "file $name"; Stamp = "sourceforge:$name"; Hash = ''; ExtractDir = ''; FileName = $name
+                    Urls = @("https://downloads.sourceforge.net/project/$path", "https://master.dl.sourceforge.net/project/$($path)?viasf=1")
+                }
+            }
+            throw "No file matching $($Source.Pattern) in SourceForge's $($Source.Project)/$($Source.Path)."
+        }
+        'files' {
+            $first = $Source.Base + $Source.Files[0]
+            $stamp = Get-RemoteStamp $first
+            if (-not $stamp) { throw "$(([Uri]$first).Host) did not answer." }
+            return [pscustomobject]@{
+                Label = 'latest'; Stamp = "files:$stamp"; Hash = ''; ExtractDir = ''; FileName = ''; Urls = @()
+                Files = @($Source.Files | ForEach-Object { [pscustomobject]@{ Name = $_; Url = $Source.Base + $_ } })
             }
         }
         'github' {
@@ -239,6 +296,8 @@ function Get-SourceName($Source) {
     switch ($Source.Kind) {
         'scoop' { "Scoop manifest $($Source.Spec)" }
         'techpowerup' { 'TechPowerUp download page' }
+        'sourceforge' { "SourceForge $($Source.Project)" }
+        'files' { ([Uri]$Source.Base).Host }
         'github' { "GitHub release $($Source.Repo)" }
         default { ([Uri]$Source.Url).Host }
     }
@@ -483,15 +542,23 @@ function Update-Tool($t) {
 
             $stage = Join-Path $Work ($t.Folder + "-$i")
             New-Item -ItemType Directory -Force -Path $stage | Out-Null
-            $file = Join-Path $stage $src.FileName
-            $urls = @(if ($src.TechPowerUp) { Get-TechPowerUpLinks $src.TechPowerUp.Page $src.TechPowerUp.Id 6 } else { $src.Urls })
-            if ($urls.Count -eq 0) { throw 'No download link could be obtained.' }
-            Write-Host "    downloading $label from $(([Uri]$urls[0]).Host)"
-            $used = Save-VerifiedDownload $urls $file $src.Hash
-            if ($used -ne $urls[0]) { Write-Host "    got it from $(([Uri]$used).Host)" }
-            if ($src.Hash) { Write-Host '    hash verified' }
-
-            $content = Expand-Download $file $stage $src.ExtractDir $t.Pick
+            if ($src.Files) {
+                # Loose files instead of an archive; the signature check below covers each one.
+                $content = Join-Path $stage 'files'
+                New-Item -ItemType Directory -Force -Path $content | Out-Null
+                Write-Host "    downloading $(@($src.Files).Count) files from $(([Uri]$src.Files[0].Url).Host)"
+                foreach ($f in $src.Files) { Save-VerifiedDownload @($f.Url) (Join-Path $content $f.Name) '' | Out-Null }
+            }
+            else {
+                $file = Join-Path $stage $src.FileName
+                $urls = @(if ($src.TechPowerUp) { Get-TechPowerUpLinks $src.TechPowerUp.Page $src.TechPowerUp.Id 6 } else { $src.Urls })
+                if ($urls.Count -eq 0) { throw 'No download link could be obtained.' }
+                Write-Host "    downloading $label from $(([Uri]$urls[0]).Host)"
+                $used = Save-VerifiedDownload $urls $file $src.Hash
+                if ($used -ne $urls[0]) { Write-Host "    got it from $(([Uri]$used).Host)" }
+                if ($src.Hash) { Write-Host '    hash verified' }
+                $content = Expand-Download $file $stage $src.ExtractDir $t.Pick
+            }
             if ($t.Signer) {
                 Assert-Signed $content $t.Signer
                 Write-Host "    signature verified ($($t.Signer))"
