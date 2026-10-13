@@ -91,9 +91,13 @@ public sealed class ReportViewModel : ObservableObject
 
         OpenHtmlCommand = new RelayCommand(() =>
         {
-            if (HtmlPath == null || !ShellOpen.Open(HtmlPath, out string? error))
+            if (HtmlPath == null)
             {
-                notify("Could not open the HTML report" + (HtmlPath == null ? ": it was not saved." : "."), LedState.Warning);
+                notify("Could not open the HTML report: it was not saved.", LedState.Warning);
+            }
+            else if (!ShellOpen.Open(HtmlPath, out string? error))
+            {
+                notify($"Could not open the HTML report: {error}", LedState.Warning);
             }
         }, () => HtmlPath != null);
         OpenFolderCommand = new RelayCommand(() => ShellOpen.Open(Folder));
