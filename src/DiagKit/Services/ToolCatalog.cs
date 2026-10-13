@@ -80,9 +80,26 @@ public static class ToolCatalog
         manifest.Tools = manifest.Tools
             .Where(t => !string.IsNullOrWhiteSpace(t.Id) && t.Executables.Count > 0)
             .ToList();
+        Upgrade(manifest);
 
         EnsureToolFolders(manifest);
         return new ManifestLoadResult { Manifest = manifest, Warning = warning };
+    }
+
+    /// <summary>
+    /// Applies built-in list changes to a tools.json written by an older DiagKit, in memory only, so the
+    /// user's own edits in the file are kept.
+    /// </summary>
+    private static void Upgrade(ToolManifest manifest)
+    {
+        if (manifest.Version < 2)
+        {
+            // Version 2: PawnIO is installed from the health check, not launched as a tile.
+            foreach (ToolDefinition t in manifest.Tools.Where(t => t.Id.Equals("pawnio", StringComparison.OrdinalIgnoreCase)))
+            {
+                t.Hidden = true;
+            }
+        }
     }
 
     /// <summary>Creates tools\&lt;folder&gt; for every entry so it is obvious where each exe goes.</summary>

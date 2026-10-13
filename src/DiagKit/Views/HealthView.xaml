@@ -53,6 +53,17 @@
                             </StackPanel>
                         </CheckBox>
 
+                        <StackPanel Visibility="{Binding CanInstallPawnIo, Converter={StaticResource BoolToVis}}">
+                            <Border Style="{StaticResource Rule}" Margin="0,18" />
+                            <CheckBox IsChecked="{Binding InstallPawnIo}">
+                                <StackPanel>
+                                    <TextBlock Text="Install the CPU temperature driver" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Text.Muted}" Margin="0,3,0,0" TextWrapping="Wrap"
+                                               Text="CPU temperatures need PawnIO, a signed driver that is not installed on this PC. It stays installed afterwards and can be removed in Settings > Apps." />
+                                </StackPanel>
+                            </CheckBox>
+                        </StackPanel>
+
                         <Border Style="{StaticResource Rule}" Margin="0,18" />
 
                         <StackPanel Orientation="Horizontal">

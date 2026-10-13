@@ -49,6 +49,11 @@ public static class ReportRunner
             new BatteryCollector(),
         };
 
+        if (options.InstallPawnIo)
+        {
+            collectors.Add(new PawnIoSetupCollector());
+        }
+
         if (options.StartupScan)
         {
             collectors.Add(new AutorunsCollector());

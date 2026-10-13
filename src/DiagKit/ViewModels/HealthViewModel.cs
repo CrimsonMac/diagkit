@@ -31,6 +31,8 @@ public sealed class HealthViewModel : ObservableObject
     private ReportViewModel? _report;
     private int _stressSeconds;
     private bool _includeStartup = true;
+    private bool _installPawnIo = true;
+    private bool _canInstallPawnIo;
     private string _progressText = "";
     private string _runTitle = "";
     private List<ComponentItem> _components = new();
@@ -154,6 +156,19 @@ public sealed class HealthViewModel : ObservableObject
         }
     }
 
+    /// <summary>Offer to install PawnIO: only when it is missing on this PC and its setup is in the kit.</summary>
+    public bool CanInstallPawnIo
+    {
+        get => _canInstallPawnIo;
+        private set => SetProperty(ref _canInstallPawnIo, value);
+    }
+
+    public bool InstallPawnIo
+    {
+        get => _installPawnIo;
+        set => SetProperty(ref _installPawnIo, value);
+    }
+
     public string EstimateText
     {
         get
@@ -187,6 +202,11 @@ public sealed class HealthViewModel : ObservableObject
         await _tools.LoadTask;
         IReadOnlyDictionary<string, string?> paths = _tools.ToolPaths();
         bool pawn = await Task.Run(SystemProbe.IsPawnIoInstalled);
+        bool pawnSetup = paths.TryGetValue("pawnio", out string? setup) && setup != null;
+        CanInstallPawnIo = !pawn && pawnSetup;
+        string pawnText = pawn ? "Installed: CPU temperatures available"
+            : pawnSetup ? "Not installed on this PC: tick 'Install the CPU temperature driver' above to add it"
+            : "Not installed, and PawnIO setup is not in the kit: no CPU temperatures (fetch-tools.ps1 downloads it)";
 
         ComponentItem Item(string id, string name, string have, string missing)
         {
@@ -199,7 +219,7 @@ public sealed class HealthViewModel : ObservableObject
             Item("smartctl", "smartctl", "Full SMART data for every drive", "Missing: only Windows' basic drive status (add tools\\smartmontools\\smartctl.exe)"),
             Item("bluescreenview", "BlueScreenView", "Names the driver behind each crash", "Missing: crashes are counted but not attributed"),
             Item("autorunsc", "autorunsc", "Checks startup entries for signatures", "Missing: startup scan is skipped (comes in the Autoruns zip)"),
-            new(pawn ? LedState.Ok : LedState.Off, "PawnIO driver", pawn ? "Installed: CPU temperatures available" : "Not installed on this PC: no CPU temperatures (install from Tools > Drivers)"),
+            new(pawn ? LedState.Ok : LedState.Off, "PawnIO driver", pawnText),
         };
     }
 
@@ -213,11 +233,14 @@ public sealed class HealthViewModel : ObservableObject
     private async Task RunAsync()
     {
         await _tools.LoadTask;
+        // F5 can start a check before the setup page has looked at this PC; the PawnIO option depends on it.
+        await RefreshComponentsAsync();
         var options = new ReportOptions
         {
             StressTest = _stressSeconds > 0,
             StressSeconds = Math.Max(_stressSeconds, 10),
             StartupScan = _includeStartup,
+            InstallPawnIo = _installPawnIo && _canInstallPawnIo,
         };
 
         List<PlannedStep> plan = ReportRunner.Plan(options);

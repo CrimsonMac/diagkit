@@ -6,7 +6,7 @@
   //   registryTraces  keys deleted after the tool exits, only if they did not exist before launch
   //   registryParents same, but only deleted when left empty
   //   hidden          used by the health check only, not shown as a tile
-  "version": 1,
+  "version": 2,
   "tools": [
     {
       "id": "hwinfo",
@@ -129,10 +129,11 @@
     {
       "id": "pawnio",
       "name": "PawnIO driver setup",
-      "category": "Drivers",
-      "description": "Installs the signed PawnIO driver so the health check can read CPU temperatures. This installs a driver on the PC.",
+      "category": "Health check components",
+      "description": "Signed driver for CPU temperatures. The health check offers to install it when it is missing.",
       "folder": "PawnIO",
       "executables": [ "PawnIO_setup.exe", "PawnIO*setup*.exe", "PawnIO*.exe" ],
+      "hidden": true,
       "homepage": "https://pawnio.eu/"
     },
     {

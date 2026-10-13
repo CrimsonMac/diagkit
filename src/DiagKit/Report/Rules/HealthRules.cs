@@ -536,7 +536,7 @@ public static class HealthRules
                 s.Note ?? "No CPU temperature sensor responded.",
                 r.System.PawnIoInstalled
                     ? "Open HWiNFO from the Tools tab to check temperatures."
-                    : "Run 'PawnIO driver setup' from the Tools tab (it installs a signed driver) and check again, or use HWiNFO.");
+                    : "Run the check again with 'Install the CPU temperature driver' ticked (it installs the signed PawnIO driver), or use HWiNFO.");
         }
         else if (s.CpuPackageTemp is double t)
         {
@@ -612,13 +612,13 @@ public static class HealthRules
             // Never turn "no data" into "no problem".
             Add(f, Severity.Info, "Temperatures", "load-no-data", "The CPU load test could not measure anything",
                 "The load ran, but neither CPU temperature nor clock speed could be read, so it cannot say whether the CPU overheats or throttles.",
-                "Install PawnIO from the Tools tab and run the check again, or watch HWiNFO during a stress run.", ev);
+                "Run the check again with 'Install the CPU temperature driver' ticked, or watch HWiNFO during a stress run.", ev);
         }
         else if (drop >= 20)
         {
             Add(f, Severity.Info, "Temperatures", "load-clock-drop", $"Clock speed fell {drop:0}% during the load test",
                 "Without a temperature reading this cannot be pinned on heat. Laptops and many stock Intel desktops lower their clocks after a short boost window by design (power limits).",
-                "Install PawnIO from the Tools tab and repeat the test to see temperatures, or watch HWiNFO during a longer stress run.", ev);
+                "Repeat the test with 'Install the CPU temperature driver' ticked to see temperatures, or watch HWiNFO during a longer stress run.", ev);
         }
         else
         {

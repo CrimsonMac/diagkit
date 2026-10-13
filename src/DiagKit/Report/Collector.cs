@@ -86,6 +86,9 @@ public sealed class ReportOptions
     public bool StressTest { get; set; }
     public int StressSeconds { get; set; } = 30;
     public bool StartupScan { get; set; } = true;
+
+    /// <summary>Install the PawnIO driver first (only set when it is missing and its setup is in the kit).</summary>
+    public bool InstallPawnIo { get; set; }
 }
 
 /// <summary>Shared state for one health-check run.</summary>
