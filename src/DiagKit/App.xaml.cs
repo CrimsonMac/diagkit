@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -20,13 +19,7 @@ public partial class App : Application
             AppPaths.LogError("Unobserved task exception", args.Exception);
             args.SetObserved();
         };
-        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-        {
-            if (args.ExceptionObject is Exception ex)
-            {
-                AppPaths.LogError("Fatal", ex);
-            }
-        };
+        // Fatal AppDomain exceptions are logged and shown by Program.Main.
 
         var window = new MainWindow();
         var vm = new MainViewModel(IconLoader.Load, window.Confirm);
@@ -37,9 +30,10 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        AppPaths.LogError("Unhandled UI exception", e.Exception);
+        string? log = AppPaths.LogError("Unhandled UI exception", e.Exception);
         MessageBox.Show(
-            "Something went wrong: " + e.Exception.Message + "\n\nDetails were written to diagkit-error.log next to DiagKit.exe. DiagKit will keep running.",
+            "Something went wrong: " + e.Exception.Message +
+            (log != null ? $"\n\nDetails were written to {log}." : "") + "\n\nDiagKit will keep running.",
             "DiagKit", MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
     }

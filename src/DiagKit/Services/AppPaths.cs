@@ -62,24 +62,23 @@ public static class AppPaths
         }
     }
 
-    public static void LogError(string context, Exception ex)
+    /// <summary>Appends to diagkit-error.log next to the exe, or in %TEMP% on a read-only kit. Returns the path written, or null.</summary>
+    public static string? LogError(string context, Exception ex)
     {
         string text = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {context}{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}";
-        try
-        {
-            File.AppendAllText(ErrorLogPath, text);
-        }
-        catch
+        foreach (string path in new[] { ErrorLogPath, Path.Combine(Path.GetTempPath(), "diagkit-error.log") })
         {
             try
             {
-                // Read-only kit: fall back to the temp folder so the error is never lost.
-                File.AppendAllText(Path.Combine(Path.GetTempPath(), "diagkit-error.log"), text);
+                File.AppendAllText(path, text);
+                return path;
             }
             catch
             {
-                // Nothing else to do.
+                // Try the next location.
             }
         }
+
+        return null;
     }
 }
