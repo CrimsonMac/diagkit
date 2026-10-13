@@ -67,7 +67,7 @@ public sealed class ToolViewModel : ObservableObject
     public string StatusText => !IsAvailable ? "Not found" : IsRunning ? (_runningCount > 1 ? $"{_runningCount} running" : "Running") : "Ready";
 
     public string LocationText => IsAvailable
-        ? Path.GetRelativePath(AppPaths.BaseDir, _exePath!)
+        ? Compat.GetRelativePath(AppPaths.BaseDir, _exePath!)
         : $"Not found. Put {Definition.Executables.FirstOrDefault()} in tools\\{Definition.Folder}, then Rescan.";
 
     public object? Icon

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DiagKit.Report.Collectors;
 
-public sealed partial class StorageCollector : ICollector
+public sealed class StorageCollector : ICollector
 {
     public string Name => "Drive health";
     public string Description => "SMART data: bad sectors, wear, temperature, error counters";
@@ -18,8 +18,7 @@ public sealed partial class StorageCollector : ICollector
 
     private const string StorageNs = @"root\Microsoft\Windows\Storage";
 
-    [GeneratedRegex(@"^/dev/sd([a-z]+)$", RegexOptions.IgnoreCase)]
-    private static partial Regex SdName();
+    private static readonly Regex SdName = new(@"^/dev/sd([a-z]+)$", RegexOptions.IgnoreCase);
 
     public async Task CollectAsync(CollectorContext ctx, CollectorStatus status, CancellationToken ct)
     {
@@ -164,7 +163,7 @@ public sealed partial class StorageCollector : ICollector
                     string type = d.TryGetProperty("type", out JsonElement t) ? t.GetString() ?? "" : "";
                     if (!string.IsNullOrEmpty(name))
                     {
-                        devices.Add((name, type));
+                        devices.Add((name!, type));
                     }
                 }
             }
@@ -226,7 +225,7 @@ public sealed partial class StorageCollector : ICollector
 
         if (target == null)
         {
-            Match m = SdName().Match(deviceName);
+            Match m = SdName.Match(deviceName);
             if (m.Success)
             {
                 int number = 0;
@@ -285,7 +284,7 @@ public sealed partial class StorageCollector : ICollector
         }
 
         var sb = new StringBuilder();
-        foreach (char c in serial)
+        foreach (char c in serial!)
         {
             if (char.IsLetterOrDigit(c))
             {

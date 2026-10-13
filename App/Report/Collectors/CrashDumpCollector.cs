@@ -159,7 +159,7 @@ public sealed class CrashDumpCollector : ICollector
         }
         catch (DecoderFallbackException)
         {
-            return Encoding.Latin1.GetString(bytes);
+            return Compat.Latin1.GetString(bytes);
         }
     }
 

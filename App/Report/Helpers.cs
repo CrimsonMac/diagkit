@@ -79,7 +79,7 @@ internal static class Wmi
     public static int? Int(this Dictionary<string, object?> row, string key)
     {
         long? l = row.Long(key);
-        return l is null ? null : (int)Math.Clamp(l.Value, int.MinValue, int.MaxValue);
+        return l is null ? null : (int)Compat.Clamp(l.Value, int.MinValue, int.MaxValue);
     }
 
     public static bool? Bool(this Dictionary<string, object?> row, string key)
@@ -139,7 +139,7 @@ internal static class ProcessRunner
         {
             try
             {
-                process.Kill(entireProcessTree: true);
+                Compat.KillTree(process);
             }
             catch
             {

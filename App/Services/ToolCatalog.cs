@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Enumeration;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -126,15 +125,6 @@ public static class ToolCatalog
     /// <summary>How many folder levels below the folder being searched an executable may sit.</summary>
     private const int SearchDepth = 3;
 
-    private static readonly EnumerationOptions WalkOptions = new()
-    {
-        RecurseSubdirectories = true,
-        // One extra level, so a tool's own folder (tools\<folder>) can be searched SearchDepth levels deep too.
-        MaxRecursionDepth = SearchDepth + 1,
-        IgnoreInaccessible = true,
-        AttributesToSkip = FileAttributes.System,
-    };
-
     /// <summary>
     /// Finds the executable for each tool: first in its own folder, then anywhere under tools\
     /// (so a zip extracted into a differently named folder still works). The folder tree is read once
@@ -143,17 +133,11 @@ public static class ToolCatalog
     public static List<string?> ResolveAll(IReadOnlyList<ToolDefinition> tools)
     {
         string root = AppPaths.ToolsRoot;
-        List<string> files = new();
-        try
+        var files = new List<string>();
+        if (Directory.Exists(root))
         {
-            if (Directory.Exists(root))
-            {
-                files = Directory.EnumerateFiles(root, "*", WalkOptions).ToList();
-            }
-        }
-        catch (Exception)
-        {
-            // Unreadable tools folder: every tool shows as missing.
+            // One extra level, so a tool's own folder (tools\<folder>) can be searched SearchDepth levels deep too.
+            Walk(new DirectoryInfo(root), SearchDepth + 1, files);
         }
 
         var result = new List<string?>(tools.Count);
@@ -168,19 +152,52 @@ public static class ToolCatalog
         return result;
     }
 
+    /// <summary>Collects files up to <paramref name="depth"/> folder levels down, skipping unreadable folders and system files.</summary>
+    private static void Walk(DirectoryInfo dir, int depth, List<string> files)
+    {
+        try
+        {
+            foreach (FileSystemInfo entry in dir.EnumerateFileSystemInfos())
+            {
+                if ((entry.Attributes & FileAttributes.System) != 0)
+                {
+                    continue;
+                }
+
+                if (entry is DirectoryInfo sub)
+                {
+                    // Junctions and symlinks are skipped so a link loop cannot make the walk endless.
+                    if (depth > 0 && (sub.Attributes & FileAttributes.ReparsePoint) == 0)
+                    {
+                        Walk(sub, depth - 1, files);
+                    }
+                }
+                else
+                {
+                    files.Add(entry.FullName);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Unreadable folder: whatever is in it shows as missing.
+        }
+    }
+
     private static string? FindFirst(List<string> files, string dir, IEnumerable<string> patterns)
     {
         string prefix = dir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         List<string> inScope = files.Where(f => f.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
-                                                f.AsSpan(prefix.Length).Count(Path.DirectorySeparatorChar) <= SearchDepth)
+                                                Depth(f, prefix.Length) <= SearchDepth)
             .ToList();
 
         foreach (string pattern in patterns)
         {
             // Shortest path wins: prefer the copy nearest the tool folder root.
             string? best = inScope
-                .Where(f => FileSystemName.MatchesSimpleExpression(pattern, Path.GetFileName(f.AsSpan()), ignoreCase: true))
-                .MinBy(f => f.Length);
+                .Where(f => Wildcard.IsMatch(pattern, Path.GetFileName(f)))
+                .OrderBy(f => f.Length)
+                .FirstOrDefault();
             if (best != null)
             {
                 return best;
@@ -188,5 +205,19 @@ public static class ToolCatalog
         }
 
         return null;
+    }
+
+    private static int Depth(string path, int start)
+    {
+        int count = 0;
+        for (int i = start; i < path.Length; i++)
+        {
+            if (path[i] == Path.DirectorySeparatorChar)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

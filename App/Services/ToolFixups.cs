@@ -40,7 +40,7 @@ public static class ToolFixups
         }
 
         // TM5 writes the path as ANSI bytes with no terminator or newline.
-        string target = Encoding.Latin1.GetString(File.ReadAllBytes(link)).Trim('\0', ' ', '\r', '\n');
+        string target = Compat.Latin1.GetString(File.ReadAllBytes(link)).Trim('\0', ' ', '\r', '\n');
         if (target.Length > 0 && File.Exists(target))
         {
             return;

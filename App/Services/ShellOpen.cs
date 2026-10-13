@@ -17,11 +17,13 @@ public static class ShellOpen
         try
         {
             string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
-            var psi = new ProcessStartInfo(explorer)
+            // Paths and URLs never contain quotes, so quoting is enough to pass them as one argument.
+            // A trailing backslash would escape the closing quote.
+            string arg = pathOrUrl.Length > 3 ? pathOrUrl.TrimEnd('\\') : pathOrUrl;
+            var psi = new ProcessStartInfo(explorer, "\"" + arg + "\"")
             {
                 UseShellExecute = false,
             };
-            psi.ArgumentList.Add(pathOrUrl);
             Process.Start(psi)?.Dispose();
             return true;
         }

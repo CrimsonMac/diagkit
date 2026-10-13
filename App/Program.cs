@@ -1,25 +1,28 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace DiagKit;
 
 /// <summary>
 /// Custom entry point so that failures during the very first steps of startup (loading the theme,
-/// WPF's native DLLs, the main window) are logged and shown, instead of the process vanishing silently.
+/// the main window) are logged and shown, instead of the process vanishing silently.
 /// Deliberately depends on nothing else in the app.
 /// </summary>
-public static partial class Program
+public static class Program
 {
     [STAThread]
     public static int Main()
     {
+        // Must be in place before any type from a referenced library is touched.
+        AppDomain.CurrentDomain.AssemblyResolve += ResolveEmbedded;
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Report("DiagKit crashed", e.ExceptionObject as Exception);
         try
         {
-            var app = new App();
-            app.InitializeComponent();
-            return app.Run();
+            return Run();
         }
         catch (Exception ex)
         {
@@ -28,10 +31,63 @@ public static partial class Program
         }
     }
 
+    // Separate method so the JIT only resolves App (and everything it references) after the resolver is hooked up.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Run()
+    {
+        var app = new App();
+        app.InitializeComponent();
+        return app.Run();
+    }
+
+    private static readonly Dictionary<string, Assembly?> Loaded = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The libraries DiagKit uses are embedded in the exe as "deps/&lt;name&gt;.dll" resources (see DiagKit.csproj)
+    /// and loaded from memory, so nothing is extracted to disk. Any requested version is answered with the
+    /// embedded copy, which also takes the place of the binding redirects an exe.config would normally carry.
+    /// </summary>
+    private static Assembly? ResolveEmbedded(object? sender, ResolveEventArgs args)
+    {
+        string name = new AssemblyName(args.Name).Name ?? "";
+        lock (Loaded)
+        {
+            if (Loaded.TryGetValue(name, out Assembly? cached))
+            {
+                return cached;
+            }
+
+            Assembly? result = null;
+            using (Stream? s = typeof(Program).Assembly.GetManifestResourceStream("deps/" + name + ".dll"))
+            {
+                if (s != null)
+                {
+                    var bytes = new byte[s.Length];
+                    int read = 0;
+                    while (read < bytes.Length)
+                    {
+                        int n = s.Read(bytes, read, bytes.Length - read);
+                        if (n == 0)
+                        {
+                            break;
+                        }
+
+                        read += n;
+                    }
+
+                    result = Assembly.Load(bytes);
+                }
+            }
+
+            Loaded[name] = result;
+            return result;
+        }
+    }
+
     internal static void Report(string context, Exception? ex)
     {
         string text = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {context}{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}";
-        string? logPath = TryAppend(Path.Combine(AppContext.BaseDirectory, "diagkit-error.log"), text)
+        string? logPath = TryAppend(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "diagkit-error.log"), text)
                           ?? TryAppend(Path.Combine(Path.GetTempPath(), "diagkit-error.log"), text);
 
         // Native message box: works even when WPF itself is what failed to load.
@@ -66,6 +122,6 @@ public static partial class Program
         }
     }
 
-    [LibraryImport("user32.dll", EntryPoint = "MessageBoxW", StringMarshalling = StringMarshalling.Utf16)]
-    private static partial int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
+    [DllImport("user32.dll", EntryPoint = "MessageBoxW", CharSet = CharSet.Unicode)]
+    private static extern int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
 }

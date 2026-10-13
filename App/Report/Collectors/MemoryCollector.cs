@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DiagKit.Report.Collectors;
 
-public sealed partial class MemoryCollector : ICollector
+public sealed class MemoryCollector : ICollector
 {
     public string Name => "Memory";
     public string Description => "Installed RAM sticks, speed they run at versus their rating";
@@ -15,12 +15,11 @@ public sealed partial class MemoryCollector : ICollector
     public TimeSpan Timeout => TimeSpan.FromSeconds(30);
 
     // Common kit speeds as they appear in part numbers (F4-3600C16..., CMK16GX4M2B3200C16, BL8G32C16U4B is not matched).
-    [GeneratedRegex(@"(?<!\d)(2133|2400|2666|2933|3000|3200|3466|3600|3733|3800|4000|4133|4266|4400|4800|5200|5600|6000|6200|6400|6600|6800|7000|7200|7600|8000|8200|8400)(?!\d)")]
-    private static partial Regex SpeedInPartNumber();
+    private static readonly Regex SpeedInPartNumber = new(@"(?<!\d)(2133|2400|2666|2933|3000|3200|3466|3600|3733|3800|4000|4133|4266|4400|4800|5200|5600|6000|6200|6400|6600|6800|7000|7200|7600|8000|8200|8400)(?!\d)");
 
     private static bool IsPlaceholder(string? maker)
-        => string.IsNullOrWhiteSpace(maker) || maker.Equals("Unknown", StringComparison.OrdinalIgnoreCase) ||
-           maker.Trim('0', ' ').Length == 0;
+        => string.IsNullOrWhiteSpace(maker) || maker!.Equals("Unknown", StringComparison.OrdinalIgnoreCase) ||
+           maker!.Trim('0', ' ').Length == 0;
 
     public Task CollectAsync(CollectorContext ctx, CollectorStatus status, CancellationToken ct)
     {
@@ -59,7 +58,7 @@ public sealed partial class MemoryCollector : ICollector
 
             if (part != null)
             {
-                Match m = SpeedInPartNumber().Match(part);
+                Match m = SpeedInPartNumber.Match(part);
                 if (m.Success)
                 {
                     module.PartNumberSpeedHint = int.Parse(m.Value);

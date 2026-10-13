@@ -900,7 +900,7 @@ public static class HealthRules
     }
 
     // The kit's exe may have been renamed; its default name is kept so older copies are filtered too.
-    private static readonly string[] OwnExeNames = new[] { Path.GetFileName(Environment.ProcessPath ?? ""), "DiagKit.exe" }
+    private static readonly string[] OwnExeNames = new[] { Path.GetFileName(Compat.ProcessPath ?? ""), "DiagKit.exe" }
         .Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
     private static void Programs(DiagnosticReport r, List<Finding> f)

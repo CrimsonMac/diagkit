@@ -18,7 +18,7 @@ public sealed class StressCollector : ICollector
 
     public StressCollector(int seconds)
     {
-        _seconds = Math.Clamp(seconds, 10, 300);
+        _seconds = Compat.Clamp(seconds, 10, 300);
     }
 
     public string Name => "CPU load test";

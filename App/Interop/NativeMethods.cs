@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace DiagKit.Interop;
 
-internal static partial class NativeMethods
+internal static class NativeMethods
 {
     public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
@@ -13,18 +13,18 @@ internal static partial class NativeMethods
     public const int SM_CYSIZEFRAME = 33;
     public const int SM_CXPADDEDBORDER = 92;
 
-    [LibraryImport("dwmapi.dll")]
-    public static partial int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
-    [LibraryImport("user32.dll")]
-    public static partial int GetSystemMetricsForDpi(int index, uint dpi);
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetricsForDpi(int index, uint dpi);
 
-    [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
-    public static partial int SHDefExtractIconW(string iconFile, int index, uint flags, out IntPtr large, out IntPtr small, uint iconSize);
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern int SHDefExtractIconW(string iconFile, int index, uint flags, out IntPtr large, out IntPtr small, uint iconSize);
 
-    [LibraryImport("user32.dll")]
+    [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool DestroyIcon(IntPtr handle);
+    public static extern bool DestroyIcon(IntPtr handle);
 
     // ---- Performance Data Helper (the API behind Task Manager's CPU "Speed")
     public const uint PDH_FMT_DOUBLE = 0x00000200;
@@ -36,18 +36,18 @@ internal static partial class NativeMethods
         [FieldOffset(8)] public double DoubleValue;
     }
 
-    [LibraryImport("pdh.dll", EntryPoint = "PdhOpenQueryW", StringMarshalling = StringMarshalling.Utf16)]
-    public static partial uint PdhOpenQuery(string? dataSource, IntPtr userData, out IntPtr query);
+    [DllImport("pdh.dll", EntryPoint = "PdhOpenQueryW", CharSet = CharSet.Unicode)]
+    public static extern uint PdhOpenQuery(string? dataSource, IntPtr userData, out IntPtr query);
 
-    [LibraryImport("pdh.dll", EntryPoint = "PdhAddEnglishCounterW", StringMarshalling = StringMarshalling.Utf16)]
-    public static partial uint PdhAddEnglishCounter(IntPtr query, string counterPath, IntPtr userData, out IntPtr counter);
+    [DllImport("pdh.dll", EntryPoint = "PdhAddEnglishCounterW", CharSet = CharSet.Unicode)]
+    public static extern uint PdhAddEnglishCounter(IntPtr query, string counterPath, IntPtr userData, out IntPtr counter);
 
-    [LibraryImport("pdh.dll")]
-    public static partial uint PdhCollectQueryData(IntPtr query);
+    [DllImport("pdh.dll")]
+    public static extern uint PdhCollectQueryData(IntPtr query);
 
-    [LibraryImport("pdh.dll")]
-    public static partial uint PdhGetFormattedCounterValue(IntPtr counter, uint format, IntPtr type, out PdhCounterValue value);
+    [DllImport("pdh.dll")]
+    public static extern uint PdhGetFormattedCounterValue(IntPtr counter, uint format, IntPtr type, out PdhCounterValue value);
 
-    [LibraryImport("pdh.dll")]
-    public static partial uint PdhCloseQuery(IntPtr query);
+    [DllImport("pdh.dll")]
+    public static extern uint PdhCloseQuery(IntPtr query);
 }

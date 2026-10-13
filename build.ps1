@@ -5,12 +5,10 @@
 .EXAMPLE
     .\build.ps1                      # complete kit in .\dist\DiagKit: DiagKit.exe plus every tool
     .\build.ps1 -Output E:\DiagKit   # build straight onto the stick
-    .\build.ps1 -Folder              # loose framework files: fastest startup, ~400 files
     .\build.ps1 -NoTools             # only the app; run .\fetch-tools.ps1 later
 #>
 param(
     [string]$Output = (Join-Path $PSScriptRoot 'dist\DiagKit'),
-    [switch]$Folder,
     [switch]$NoTools
 )
 
@@ -18,38 +16,17 @@ $ErrorActionPreference = 'Stop'
 $project = Join-Path $PSScriptRoot 'App\DiagKit.csproj'
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    throw 'The .NET SDK is not installed. Get the .NET 10 SDK from https://dotnet.microsoft.com/download/dotnet/10.0'
-}
-$sdks = & dotnet --list-sdks
-if (-not ($sdks | Where-Object { $_ -match '^10\.' })) {
-    throw "No .NET 10 SDK found (installed: $($sdks -join ', ')). Install it from https://dotnet.microsoft.com/download/dotnet/10.0"
+    throw 'The .NET SDK is not installed. Get it from https://dotnet.microsoft.com/download'
 }
 
-$publishArgs = @(
-    'publish', $project,
-    '-c', 'Release',
-    '-r', 'win-x64',
-    '--self-contained', 'true',
-    '-o', $Output,
-    # Precompiled code: the main reason the app opens quickly instead of JIT-compiling WPF on every launch.
-    '-p:PublishReadyToRun=true',
-    '-p:DebugType=none'
-)
-if (-not $Folder) {
-    $publishArgs += @(
-        '-p:PublishSingleFile=true',
-        # WPF's native DLLs (wpfgfx_cor3, PresentationNative_cor3, ...) cannot load from inside the bundle.
-        # Bundling them makes the host extract them once per PC to %TEMP%\.net and reuse them after that.
-        # Leaving them as loose files proved fragile: a publish without them crashes at window creation.
-        '-p:IncludeNativeLibrariesForSelfExtract=true',
-        # Compression would shrink the exe but costs decompression time at every start.
-        '-p:EnableCompressionInSingleFile=false'
-    )
-}
-
-Write-Host "Publishing DiagKit to $Output ..." -ForegroundColor Cyan
-& dotnet @publishArgs
+# DiagKit targets .NET Framework 4.8, which ships with Windows, so the build is one small exe with its libraries embedded.
+$build = Join-Path ([IO.Path]::GetTempPath()) ('diagkit-build-' + [guid]::NewGuid().ToString('N'))
+Write-Host "Building DiagKit ..." -ForegroundColor Cyan
+& dotnet build $project -c Release -o $build
 if ($LASTEXITCODE -ne 0) { throw 'Build failed; see the output above.' }
+New-Item -ItemType Directory -Force -Path $Output | Out-Null
+Copy-Item (Join-Path $build 'DiagKit.exe') $Output -Force
+Remove-Item -Recurse -Force $build
 
 # Create the tools\ folders now so they can be filled before the first launch (DiagKit also does this itself).
 $manifest = Get-Content (Join-Path $PSScriptRoot 'App\tools.default.json') -Raw
@@ -58,7 +35,7 @@ foreach ($f in $folders) { New-Item -ItemType Directory -Force -Path (Join-Path 
 Copy-Item (Join-Path $PSScriptRoot 'TOOLS.md') (Join-Path $Output 'tools\README.md') -Force
 
 $exe = Join-Path $Output 'DiagKit.exe'
-$size = [math]::Round((Get-Item $exe).Length / 1MB)
+$size = [math]::Round((Get-Item $exe).Length / 1MB, 1)
 Write-Host ""
 Write-Host "Built: $exe ($size MB)" -ForegroundColor Green
 Write-Host "Rebuilding later never touches tools\ or reports\."

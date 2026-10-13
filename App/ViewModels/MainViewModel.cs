@@ -180,7 +180,7 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        int ms = Math.Clamp(3500 + text.Length * 45, 5000, 14000);
+        int ms = Compat.Clamp(3500 + text.Length * 45, 5000, 14000);
         await Task.Delay(ms);
         if (version == _noticeVersion)
         {

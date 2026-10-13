@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace DiagKit.Report.Collectors;
 
-public sealed partial class EventLogCollector : ICollector
+public sealed class EventLogCollector : ICollector
 {
     public string Name => "Event logs";
     public string Description => $"{Days} days of hardware errors, crashes, power losses and disk errors";
@@ -20,11 +20,9 @@ public sealed partial class EventLogCollector : ICollector
     public const int Days = 30;
     private static readonly string Window = $"TimeCreated[timediff(@SystemTime) <= {Days * 24L * 3600 * 1000}]";
 
-    [GeneratedRegex(@"Harddisk(\d+)", RegexOptions.IgnoreCase)]
-    private static partial Regex HarddiskNumber();
+    private static readonly Regex HarddiskNumber = new(@"Harddisk(\d+)", RegexOptions.IgnoreCase);
 
-    [GeneratedRegex(@"0x[0-9a-fA-F]+")]
-    private static partial Regex HexCode();
+    private static readonly Regex HexCode = new(@"0x[0-9a-fA-F]+");
 
     public async Task CollectAsync(CollectorContext ctx, CollectorStatus status, CancellationToken ct)
     {
@@ -209,7 +207,7 @@ public sealed partial class EventLogCollector : ICollector
         ForEach("System", $"*[System[Provider[@Name='Microsoft-Windows-WER-SystemErrorReporting'] and (EventID=1001) and {Window}]]", 200, r =>
         {
             string raw = PropText(r, 0);
-            Match m = HexCode().Match(raw);
+            Match m = HexCode.Match(raw);
             lock (s.BugChecks)
             {
                 s.BugChecks.Add(new BugCheckEvent
@@ -235,7 +233,7 @@ public sealed partial class EventLogCollector : ICollector
             string? diskHint = null;
             for (int i = 0; i < 4; i++)
             {
-                Match m = HarddiskNumber().Match(PropText(r, i));
+                Match m = HarddiskNumber.Match(PropText(r, i));
                 if (m.Success)
                 {
                     diskHint = m.Groups[1].Value;

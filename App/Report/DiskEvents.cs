@@ -7,7 +7,7 @@ namespace DiagKit.Report;
 /// One place that knows what each storage event means and how serious it is.
 /// Used by the event-log collector (labels) and by the rules (severity), including for older reports.
 /// </summary>
-public static partial class DiskEvents
+public static class DiskEvents
 {
     public static (string Label, Severity Severity) Classify(string provider, int id)
     {
@@ -59,13 +59,12 @@ public static partial class DiskEvents
         return ($"{provider} event {id}", Severity.Warning);
     }
 
-    [GeneratedRegex(@"^(?<provider>.+)-(?<id>\d+)-(?<disk>\d*)$")]
-    private static partial Regex KeyPattern();
+    private static readonly Regex KeyPattern = new(@"^(?<provider>.+)-(?<id>\d+)-(?<disk>\d*)$");
 
     /// <summary>Reads back the "provider-id-disk" key the collector stores, so old reports re-classify correctly.</summary>
     public static (string Label, Severity Severity, string? Disk) FromKey(string key, string fallbackLabel)
     {
-        Match m = KeyPattern().Match(key);
+        Match m = KeyPattern.Match(key);
         if (!m.Success)
         {
             return (fallbackLabel, Severity.Warning, null);

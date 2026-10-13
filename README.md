@@ -6,7 +6,7 @@ Built for a USB stick: one exe, a `tools` folder, and a `reports` folder that tr
 
 ## Build
 
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on the machine you build on. The PCs you diagnose need nothing, because the build is self-contained.
+You need the [.NET SDK](https://dotnet.microsoft.com/download) on the machine you build on. DiagKit targets .NET Framework 4.8, which is part of Windows 10 (1903 and later) and Windows 11, so the PCs you diagnose need nothing extra.
 
 ```powershell
 .\build.ps1 -Output E:\DiagKit        # build onto the stick and download every tool (hash/signature verified)
@@ -64,14 +64,12 @@ The rules turn the data into findings, each with a severity, a plain explanation
 
 ## Why it opens fast
 
-- **ReadyToRun publish.** WPF and app code are precompiled, so there is no JIT pass at every launch.
-- **Uncompressed single file.** Managed code is mapped straight from the exe. WPF's native DLLs (about 7 MB) are the one exception: Windows can't load them from inside the bundle, so they're extracted to `%TEMP%\.net\DiagKit` the first time DiagKit runs on a PC and reused after that. That folder is the one trace DiagKit leaves on a machine. A `-Folder` build leaves none.
+- **No runtime to load.** DiagKit runs on the .NET Framework that ships with Windows, whose WPF is already precompiled. The exe is about 5 MB instead of a 150 MB self-contained bundle, which matters most on a slow USB stick.
+- **One file, no extraction.** The libraries DiagKit uses are embedded in the exe and loaded from memory, so nothing is unpacked to `%TEMP%` and no trace is left on the PC.
 - **No UI framework dependency.** The theme is plain WPF styles, so no third-party resource dictionaries are parsed at startup.
 - **The window renders before any disk work.** The manifest is read, tools are searched recursively and exe icons are extracted on background threads, and the icons are cached per session.
 - **Lazy work.** Pages are created on first visit. The sensor driver library is only loaded when a health check starts.
 - **Collectors never touch the UI thread.** The window stays responsive during a load test because the load threads run at below-normal priority.
-
-If startup still feels slow from a slow USB stick, `.\build.ps1 -Folder` produces loose files, which skips single-file bundle mapping.
 
 ## Testing status
 

@@ -75,7 +75,7 @@ public static class BugChecks
             return false;
         }
 
-        string s = hex.Trim();
+        string s = hex!.Trim();
         if (s.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             s = s[2..];
