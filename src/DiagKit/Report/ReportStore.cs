@@ -88,7 +88,19 @@ public static class ReportStore
         {
             try
             {
-                DiagnosticReport? r = Load(dir);
+                string json = Path.Combine(dir, JsonFile);
+                if (!File.Exists(json))
+                {
+                    continue;
+                }
+
+                // Only the header fields; the rest of the report (samples, autoruns, events) is skipped, not built.
+                ReportHeader? r;
+                using (FileStream fs = File.OpenRead(json))
+                {
+                    r = JsonSerializer.Deserialize<ReportHeader>(fs, JsonOptions);
+                }
+
                 if (r == null)
                 {
                     continue;
@@ -113,5 +125,18 @@ public static class ReportStore
         }
 
         return result.OrderByDescending(r => r.CreatedAt).ToList();
+    }
+
+    /// <summary>The slice of report.json the Reports list needs.</summary>
+    private sealed class ReportHeader
+    {
+        public string MachineName { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public List<FindingHeader> Findings { get; set; } = new();
+    }
+
+    private sealed class FindingHeader
+    {
+        public Severity Severity { get; set; }
     }
 }
