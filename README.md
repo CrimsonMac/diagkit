@@ -34,6 +34,8 @@ One small exe, the tools next to it, and reports that travel with the stick. Whe
 
 Download **setup.exe** from the [Releases](https://github.com/CrimsonMac/diagkit/releases) page, or [build it yourself](#building-from-source), and run it.
 
+setup.exe is not code-signed, so Windows SmartScreen may warn about it the first time: choose **More info**, then **Run anyway**. Each release lists the SHA-256 of setup.exe, so you can check your download with `Get-FileHash setup.exe`.
+
 1. **Pick the location.** USB sticks are listed as one-click choices; **Change…** picks any folder. Setup creates `diagkit.<version>` inside it. Pick a folder that already holds a kit, or the kit itself, and setup updates that kit instead.
 2. **Tick the tools.** All of them are ticked for a new kit, about 110 MB in total. The ones the health check needs can't be unticked. On an existing kit, unticking a tool removes it, and setup remembers that choice next time.
 3. **Install.** Three downloads run at a time. Every file is checked against its publisher's hash or signature before it goes into the kit, and each tool has fallback sources in case a site is down. See [TOOLS.md](TOOLS.md) for the details.
@@ -190,6 +192,7 @@ These use documented Windows APIs and fail safely: anything that can't be remove
 - **DiagKit doesn't start.** It shows an error box and writes `diagkit-error.log` next to the exe, or in `%TEMP%` when the kit is read-only.
 - **Something misbehaves later.** `diagkit-error.log` has the stack trace, and each report's `raw\` folder has the tool output the parsers saw.
 - **A tool won't download.** Setup lists every source it tried. Run it again later, or see [TOOLS.md](TOOLS.md#sources-and-verification) for adding a tool by hand.
+- **SmartScreen blocks setup.exe.** It isn't code-signed; choose **More info**, then **Run anyway**, after checking its SHA-256 against the release page.
 - **An antivirus flags Uninstall.exe.** It deletes Prefetch and Explorer launch records for the kit's own path, which some heuristics treat as suspicious. The source is all here to check.
 
 When reporting a problem, include `diagkit-error.log` and, for a wrong finding, the report's `raw\` folder.
