@@ -22,9 +22,11 @@ public sealed class MainViewModel : ObservableObject
     private LedState _noticeLed = LedState.Info;
     private bool _isNoticeVisible;
     private int _noticeVersion;
+    private readonly Func<string, bool> _confirm;
 
     public MainViewModel(Func<string, object?> iconLoader, Func<string, bool> confirm)
     {
+        _confirm = confirm;
         Tools = new ToolsViewModel(iconLoader, ShowNotice);
         History = new HistoryViewModel(OpenReport, ShowNotice, confirm);
         Health = new HealthViewModel(Tools, ShowNotice, () => _ = History.LoadAsync());
@@ -198,6 +200,11 @@ public sealed class MainViewModel : ObservableObject
 
     private void StartUninstall()
     {
+        if (!_confirm("Are you sure you want to run the uninstaller?\n\nDiagKit closes, and Uninstall.exe lets you choose between cleaning this PC and removing DiagKit completely."))
+        {
+            return;
+        }
+
         string exe = System.IO.Path.Combine(AppPaths.BaseDir, Kit.KitLayout.UninstallExe);
         try
         {
