@@ -62,6 +62,9 @@ public sealed class ToolViewModel : ObservableObject
 
     public bool IsRunning => _runningCount > 0;
 
+    /// <summary>Found and not running: the normal state, shown by the LED alone.</summary>
+    public bool IsReady => IsAvailable && !IsRunning;
+
     public LedState Led => !IsAvailable ? LedState.Off : IsRunning ? LedState.Busy : LedState.Ok;
 
     public string StatusText => !IsAvailable ? "Not found" : IsRunning ? (_runningCount > 1 ? $"{_runningCount} running" : "Running") : "Ready";
@@ -104,6 +107,7 @@ public sealed class ToolViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsAvailable));
         OnPropertyChanged(nameof(IsRunning));
+        OnPropertyChanged(nameof(IsReady));
         OnPropertyChanged(nameof(Led));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(LocationText));

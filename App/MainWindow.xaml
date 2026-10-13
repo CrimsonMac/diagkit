@@ -49,19 +49,33 @@
 
         <!-- Title bar -->
         <Border Grid.ColumnSpan="2" Background="{StaticResource Rail}" />
-        <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                <ctl:Led State="Ok" Width="12" Height="12" Padding="3" />
-                <ctl:Led State="Warning" Width="12" Height="12" Padding="3" />
-                <ctl:Led State="Critical" Width="12" Height="12" Padding="3" />
-            </StackPanel>
+        <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+            <Image Source="Assets/app.ico" Width="18" Height="18" Margin="0,0,10,0" RenderOptions.BitmapScalingMode="HighQuality" />
             <TextBlock Text="DiagKit" FontFamily="{StaticResource Font.Display}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding MachineName}" Foreground="{StaticResource Faint}" FontSize="12.5" VerticalAlignment="Center" Margin="16,0,0,0" />
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0" ToolTip="{Binding ElevationText}"
-                        WindowChrome.IsHitTestVisibleInChrome="True">
-                <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xEA18;" FontSize="11" Foreground="{StaticResource Faint}" Margin="0,0,5,0" />
-                <TextBlock Text="{Binding ElevationText}" Foreground="{StaticResource Faint}" FontSize="12" VerticalAlignment="Center" />
-            </StackPanel>
+            <Border Style="{StaticResource Chip}" Margin="14,0,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE977;" FontSize="11" Foreground="{StaticResource Muted}" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding MachineName}" Foreground="{StaticResource Muted}" FontSize="12" />
+                </StackPanel>
+            </Border>
+            <Border Margin="6,0,0,0" ToolTip="{Binding ElevationText}" WindowChrome.IsHitTestVisibleInChrome="True">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource Chip}">
+                        <Setter Property="Background" Value="{StaticResource WarnSoft}" />
+                        <Setter Property="TextElement.Foreground" Value="{StaticResource Led.Warning}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsElevated}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource Raised}" />
+                                <Setter Property="TextElement.Foreground" Value="{StaticResource Muted}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xEA18;" FontSize="11" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding ElevationText}" FontSize="12" />
+                </StackPanel>
+            </Border>
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" WindowChrome.IsHitTestVisibleInChrome="True">
             <Button Style="{StaticResource Button.Caption}" Content="&#xE921;" Click="Minimize_Click" ToolTip="Minimize" />

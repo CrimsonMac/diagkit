@@ -2,17 +2,6 @@ using System.Collections.Generic;
 
 namespace DiagKit.Models;
 
-/// <summary>Visual state of a status LED. Shared by tools, health-check steps and findings.</summary>
-public enum LedState
-{
-    Off,
-    Ok,
-    Info,
-    Warning,
-    Critical,
-    Busy,
-}
-
 public sealed class ToolManifest
 {
     public int Version { get; set; } = 1;
