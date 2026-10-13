@@ -157,6 +157,9 @@ public static class ReportFacts
         return facts.Where(f => !string.IsNullOrWhiteSpace(f.Value)).ToList();
     }
 
+    /// <summary>Hard drives wear faster above about 50 °C; SSDs throttle above about 70 °C.</summary>
+    public static bool IsDiskHot(DiskInfo d) => d.Temperature is int t && (d.MediaType == "HDD" ? t > 50 : t > 70);
+
     public static (string Text, Severity Severity) DiskStatus(DiskInfo d)
     {
         int exit = d.SmartExitStatus ?? 0;
@@ -195,8 +198,7 @@ public static class ReportFacts
             return ("Warning", Severity.Warning);
         }
 
-        bool hdd = d.MediaType == "HDD";
-        if (d.Temperature is int t && ((hdd && t > 50) || (!hdd && t > 70)))
+        if (IsDiskHot(d))
         {
             return ("Hot", Severity.Warning);
         }
@@ -275,9 +277,7 @@ public static class ReportFacts
 
         foreach (DiskInfo d in r.Disks.Where(d => d.Temperature != null).Take(3))
         {
-            int t = d.Temperature!.Value;
-            bool hdd = d.MediaType == "HDD";
-            list.Add(new Reading(Short(d.Model), $"{t}", "°C", (hdd && t > 50) || (!hdd && t > 70) ? Severity.Warning : Severity.Ok));
+            list.Add(new Reading(Short(d.Model), $"{d.Temperature}", "°C", IsDiskHot(d) ? Severity.Warning : Severity.Ok));
         }
 
         return list;

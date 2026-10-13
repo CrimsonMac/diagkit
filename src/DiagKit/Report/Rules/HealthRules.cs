@@ -212,15 +212,12 @@ public static class HealthRules
                     "Keep good backups and budget for a replacement.", ev);
             }
 
-            if (d.Temperature is int temp)
+            if (ReportFacts.IsDiskHot(d))
             {
                 bool hdd = d.MediaType == "HDD";
-                if ((hdd && temp > 50) || (!hdd && temp > 70))
-                {
-                    Add(f, Severity.Warning, "Drives", "disk-hot", $"{name} is running hot ({temp} °C)",
-                        hdd ? "Hard drives wear faster above about 50 °C." : "SSDs slow themselves down above about 70 °C to protect the flash.",
-                        hdd ? "Check that the drive bay has airflow and the case fans work." : "Add a heatsink or improve airflow over the M.2 slot.", ev);
-                }
+                Add(f, Severity.Warning, "Drives", "disk-hot", $"{name} is running hot ({d.Temperature} °C)",
+                    hdd ? "Hard drives wear faster above about 50 °C." : "SSDs slow themselves down above about 70 °C to protect the flash.",
+                    hdd ? "Check that the drive bay has airflow and the case fans work." : "Add a heatsink or improve airflow over the M.2 slot.", ev);
             }
 
             if (d.CrcErrors is long crc && crc > 0 && d.BusType != "NVMe")
