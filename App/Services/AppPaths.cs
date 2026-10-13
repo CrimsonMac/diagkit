@@ -8,8 +8,11 @@ public static class AppPaths
     /// <summary>Folder containing DiagKit.exe (correct for single-file publishes too).</summary>
     public static string BaseDir { get; } = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
 
-    public static string ToolsRoot => Path.Combine(BaseDir, "tools");
-    public static string ManifestPath => Path.Combine(BaseDir, "tools.json");
+    public static string ToolsRoot => Path.Combine(BaseDir, "Tools");
+
+    /// <summary>The editable tool list. Kits set up before 1.1 kept it next to the exe; it moves on first start.</summary>
+    public static string ManifestPath => Path.Combine(ToolsRoot, "tools.json");
+    public static string LegacyManifestPath => Path.Combine(BaseDir, "tools.json");
     public static string ErrorLogPath => Path.Combine(BaseDir, "diagkit-error.log");
 
     private static string? _reportsRoot;
@@ -27,7 +30,7 @@ public static class AppPaths
                 return _reportsRoot;
             }
 
-            string preferred = Path.Combine(BaseDir, "reports");
+            string preferred = Path.Combine(BaseDir, "Reports");
             if (IsWritable(preferred))
             {
                 _reportsRoot = preferred;
@@ -44,7 +47,7 @@ public static class AppPaths
     }
 
     public static bool ReportsAreOnKit => string.Equals(
-        ReportsRoot, Path.Combine(BaseDir, "reports"), StringComparison.OrdinalIgnoreCase);
+        ReportsRoot, Path.Combine(BaseDir, "Reports"), StringComparison.OrdinalIgnoreCase);
 
     private static bool IsWritable(string dir)
     {

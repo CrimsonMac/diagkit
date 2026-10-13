@@ -1,12 +1,14 @@
 {
   // DiagKit tool manifest. Edit freely; DiagKit re-reads it on "Rescan".
-  //   folder          subfolder of tools\ to search (recursively, 3 levels)
+  //   folder          subfolder of Tools\ to search (recursively, 3 levels)
   //   executables     file name patterns, tried in order (* and ? allowed)
   //   arguments       passed on every launch
-  //   registryTraces  keys deleted after the tool exits, only if they did not exist before launch
+  //   registryTraces  keys the tool writes: deleted after it exits if it created them, restored if they existed before
   //   registryParents same, but only deleted when left empty
+  //   services        driver services the tool installs (* allowed): removed after it exits, only if that run created them
+  //   files           files the tool leaves outside its folder (%TEMP%\x*.sys): deleted after it exits if that run created them
   //   hidden          used by the health check only, not shown as a tile
-  "version": 2,
+  "version": 3,
   "tools": [
     {
       "id": "hwinfo",
@@ -15,6 +17,7 @@
       "description": "Full hardware inventory and live sensors: temperatures, clocks, voltages, WHEA error counts.",
       "folder": "HWiNFO64",
       "executables": [ "HWiNFO64.exe" ],
+      "services": [ "HWiNFO*" ],
       "homepage": "https://www.hwinfo.com/download/"
     },
     {
@@ -24,6 +27,7 @@
       "description": "CPU, motherboard and memory details, including RAM timings and SPD data per stick.",
       "folder": "CPU-Z",
       "executables": [ "cpuz_x64.exe", "cpuz*.exe" ],
+      "services": [ "cpuz*" ],
       "homepage": "https://www.cpuid.com/softwares/cpu-z.html"
     },
     {
@@ -35,7 +39,20 @@
       "executables": [ "GPU-Z*.exe" ],
       "registryTraces": [ "HKCU\\Software\\techPowerUp\\GPU-Z" ],
       "registryParents": [ "HKCU\\Software\\techPowerUp" ],
+      "services": [ "GPU-Z*", "GPUZ*" ],
+      "files": [ "%TEMP%\\GPU-Z*.sys", "%SystemRoot%\\Temp\\GPU-Z*.sys" ],
       "homepage": "https://www.techpowerup.com/gpuz/"
+    },
+    {
+      "id": "batteryinfoview",
+      "name": "BatteryInfoView",
+      "category": "Hardware",
+      "description": "Laptop battery wear: design versus full-charge capacity, charge cycles, and the current charge or drain rate.",
+      "folder": "BatteryInfoView",
+      "executables": [ "BatteryInfoView.exe" ],
+      "registryTraces": [ "HKCU\\Software\\NirSoft\\BatteryInfoView" ],
+      "registryParents": [ "HKCU\\Software\\NirSoft" ],
+      "homepage": "https://www.nirsoft.net/utils/battery_information_view.html"
     },
     {
       "id": "crystaldiskinfo",
@@ -82,13 +99,46 @@
       "executables": [ "TM5.exe" ]
     },
     {
+      "id": "prime95",
+      "name": "Prime95",
+      "category": "Memory and stability",
+      "description": "The classic CPU and memory torture test. Choose \"Just stress testing\"; errors or a crash mean the system is unstable.",
+      "folder": "Prime95",
+      "executables": [ "prime95.exe" ],
+      "homepage": "https://www.mersenne.org/download/"
+    },
+    {
       "id": "bluescreenview",
       "name": "BlueScreenView",
       "category": "Crashes and startup",
       "description": "Reads crash dumps and names the driver each blue screen points at.",
       "folder": "BlueScreenView",
       "executables": [ "BlueScreenView.exe" ],
+      "registryTraces": [ "HKCU\\Software\\NirSoft\\BlueScreenView" ],
+      "registryParents": [ "HKCU\\Software\\NirSoft" ],
       "homepage": "https://www.nirsoft.net/utils/blue_screen_view.html"
+    },
+    {
+      "id": "turnedontimesview",
+      "name": "TurnedOnTimesView",
+      "category": "Crashes and startup",
+      "description": "Timeline of every startup and shutdown, flagging the ones that were sudden power losses or crashes.",
+      "folder": "TurnedOnTimesView",
+      "executables": [ "TurnedOnTimesView.exe" ],
+      "registryTraces": [ "HKCU\\Software\\NirSoft\\TurnedOnTimesView" ],
+      "registryParents": [ "HKCU\\Software\\NirSoft" ],
+      "homepage": "https://www.nirsoft.net/utils/computer_turned_on_times.html"
+    },
+    {
+      "id": "appcrashview",
+      "name": "AppCrashView",
+      "category": "Crashes and startup",
+      "description": "Every program crash Windows Error Reporting recorded, with the faulting module and exception code.",
+      "folder": "AppCrashView",
+      "executables": [ "AppCrashView.exe" ],
+      "registryTraces": [ "HKCU\\Software\\NirSoft\\AppCrashView" ],
+      "registryParents": [ "HKCU\\Software\\NirSoft" ],
+      "homepage": "https://www.nirsoft.net/utils/app_crash_view.html"
     },
     {
       "id": "autoruns",
@@ -112,7 +162,21 @@
       "arguments": "-accepteula",
       "registryTraces": [ "HKCU\\Software\\Sysinternals\\Process Explorer" ],
       "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "services": [ "PROCEXP*" ],
       "homepage": "https://learn.microsoft.com/sysinternals/downloads/process-explorer"
+    },
+    {
+      "id": "procmon",
+      "name": "Process Monitor",
+      "category": "Processes and memory",
+      "description": "Live log of file, registry and process activity. Shows what a misbehaving program is actually doing.",
+      "folder": "ProcessMonitor",
+      "executables": [ "Procmon64.exe", "Procmon.exe" ],
+      "arguments": "-accepteula",
+      "registryTraces": [ "HKCU\\Software\\Sysinternals\\Process Monitor" ],
+      "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "services": [ "PROCMON*" ],
+      "homepage": "https://learn.microsoft.com/sysinternals/downloads/procmon"
     },
     {
       "id": "rammap",
@@ -124,7 +188,31 @@
       "arguments": "-accepteula",
       "registryTraces": [ "HKCU\\Software\\Sysinternals\\RAMMap" ],
       "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "services": [ "RAMMap*" ],
       "homepage": "https://learn.microsoft.com/sysinternals/downloads/rammap"
+    },
+    {
+      "id": "usbdeview",
+      "name": "USBDeview",
+      "category": "Devices and network",
+      "description": "Every USB device this PC has seen, connected or not. Useful for flaky ports and devices that keep disconnecting.",
+      "folder": "USBDeview",
+      "executables": [ "USBDeview.exe" ],
+      "registryTraces": [ "HKCU\\Software\\NirSoft\\USBDeview" ],
+      "registryParents": [ "HKCU\\Software\\NirSoft" ],
+      "homepage": "https://www.nirsoft.net/utils/usb_devices_view.html"
+    },
+    {
+      "id": "tcpview",
+      "name": "TCPView",
+      "category": "Devices and network",
+      "description": "Every open network connection and the program behind it. Spots unexpected traffic at a glance.",
+      "folder": "TCPView",
+      "executables": [ "tcpview64.exe", "tcpview.exe" ],
+      "arguments": "-accepteula",
+      "registryTraces": [ "HKCU\\Software\\Sysinternals\\TCPView" ],
+      "registryParents": [ "HKCU\\Software\\Sysinternals" ],
+      "homepage": "https://learn.microsoft.com/sysinternals/downloads/tcpview"
     },
     {
       "id": "pawnio",

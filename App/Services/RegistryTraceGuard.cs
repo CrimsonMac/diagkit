@@ -1,22 +1,36 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
+using DiagKit.Kit;
 using Microsoft.Win32;
 
 namespace DiagKit.Services;
 
 /// <summary>
-/// Snapshots which of a tool's registry keys already exist before launch and, after the tool exits,
-/// deletes only the ones it created. Existing settings of the PC owner are never touched.
-/// Keys are reference-counted across guards, so overlapping launches that share a key (two copies of
-/// a tool, or Autoruns and Process Explorer under HKCU\Software\Sysinternals) clean up once, after the last one exits.
+/// Leaves the registry as it was before a tool ran:
+/// - keys the tool creates are deleted after it exits;
+/// - keys that already existed (the PC owner's own copy of the tool, for example) are snapshotted before launch
+///   and restored afterwards, so their settings are never changed.
+/// Created keys are also written to the kit ledger until they are deleted, so a key left behind because DiagKit
+/// closed first is still cleaned up later (at the next start, or by Uninstall).
+/// Keys are reference-counted across guards, so overlapping launches that share a key (two copies of a tool,
+/// or Autoruns and Process Explorer under HKCU\Software\Sysinternals) clean up once, after the last one exits.
 /// </summary>
 public sealed class RegistryTraceGuard
 {
-    // Keys DiagKit's tools created and that are still in use, with the number of guards holding each.
-    private static readonly Dictionary<string, int> Owned = new(StringComparer.OrdinalIgnoreCase);
+    private sealed class Hold
+    {
+        public int Holders;
 
-    private readonly List<string> _createdKeys = new();
+        /// <summary>Null when DiagKit's tool created the key; otherwise the state to put back.</summary>
+        public KeySnapshot? Snapshot;
+    }
+
+    // Keys currently held by running tools.
+    private static readonly Dictionary<string, Hold> Held = new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly List<string> _keys = new();
     private readonly List<string> _createdParents = new();
     private int _cleaned;
 
@@ -27,51 +41,97 @@ public sealed class RegistryTraceGuard
     public static RegistryTraceGuard Capture(IEnumerable<string> traces, IEnumerable<string> parents)
     {
         var guard = new RegistryTraceGuard();
-        lock (Owned)
+        var created = new List<string>();
+        lock (Held)
         {
-            Claim(traces, guard._createdKeys);
-            Claim(parents, guard._createdParents);
+            foreach (string key in traces)
+            {
+                if (Held.TryGetValue(key, out Hold? hold))
+                {
+                    hold.Holders++;
+                }
+                else
+                {
+                    bool exists = TraceCleaner.KeyExists(key);
+                    Held[key] = new Hold { Holders = 1, Snapshot = exists ? KeySnapshot.Take(key) : null };
+                    if (!exists)
+                    {
+                        created.Add(key);
+                    }
+                }
+
+                guard._keys.Add(key);
+            }
+
+            foreach (string key in parents)
+            {
+                // Parents are only ever removed when DiagKit's tools created them and they ended up empty.
+                if (Held.TryGetValue(key, out Hold? hold))
+                {
+                    hold.Holders++;
+                    guard._createdParents.Add(key);
+                }
+                else if (!TraceCleaner.KeyExists(key))
+                {
+                    Held[key] = new Hold { Holders = 1 };
+                    guard._createdParents.Add(key);
+                    created.Add(key);
+                }
+            }
+        }
+
+        if (created.Count > 0)
+        {
+            KitLedger.Update(AppPaths.BaseDir, l =>
+            {
+                foreach (string key in created)
+                {
+                    l.AddTrace(TraceKinds.RegistryKey, key);
+                }
+            });
         }
 
         return guard;
     }
 
-    private static void Claim(IEnumerable<string> keys, List<string> claimed)
+    /// <summary>Drops this guard's hold on a key; returns the hold when no other running tool still has it.</summary>
+    private static Hold? Release(string key)
     {
-        foreach (string key in keys)
+        if (!Held.TryGetValue(key, out Hold? hold))
         {
-            if (Owned.TryGetValue(key, out int holders))
+            return null;
+        }
+
+        if (--hold.Holders > 0)
+        {
+            return null;
+        }
+
+        Held.Remove(key);
+        return hold;
+    }
+
+    public bool HasWork => _keys.Count > 0 || _createdParents.Count > 0;
+
+    /// <summary>
+    /// Drops this guard's holds without cleaning anything, for launches handed to a copy that was already running.
+    /// Keys DiagKit's tools created stay listed in the ledger and are removed at the next start or by Uninstall.
+    /// </summary>
+    public void Release()
+    {
+        if (Interlocked.Exchange(ref _cleaned, 1) != 0)
+        {
+            return;
+        }
+
+        lock (Held)
+        {
+            foreach (string key in _keys.Concat(_createdParents))
             {
-                Owned[key] = holders + 1;
-                claimed.Add(key);
-            }
-            else if (!KeyExists(key))
-            {
-                Owned[key] = 1;
-                claimed.Add(key);
+                Release(key);
             }
         }
     }
-
-    /// <summary>Drops this guard's hold on a key; true when no other running tool still holds it.</summary>
-    private static bool Release(string key)
-    {
-        if (!Owned.TryGetValue(key, out int holders))
-        {
-            return false;
-        }
-
-        if (holders > 1)
-        {
-            Owned[key] = holders - 1;
-            return false;
-        }
-
-        Owned.Remove(key);
-        return true;
-    }
-
-    public bool HasWork => _createdKeys.Count > 0 || _createdParents.Count > 0;
 
     public void Cleanup()
     {
@@ -80,108 +140,169 @@ public sealed class RegistryTraceGuard
             return;
         }
 
-        lock (Owned)
+        var removed = new List<string>();
+        lock (Held)
         {
-            CleanupLocked();
-        }
-    }
-
-    private void CleanupLocked()
-    {
-        foreach (string key in _createdKeys)
-        {
-            if (!Release(key))
+            foreach (string key in _keys)
             {
-                continue;
-            }
-
-            try
-            {
-                if (Split(key) is { } p)
-                {
-                    p.Root.DeleteSubKeyTree(p.SubKey, throwOnMissingSubKey: false);
-                }
-            }
-            catch
-            {
-                // Key in use or access denied; leave it.
-            }
-        }
-
-        foreach (string key in _createdParents)
-        {
-            if (!Release(key))
-            {
-                continue;
-            }
-
-            try
-            {
-                if (Split(key) is not { } p)
+                Hold? hold = Release(key);
+                if (hold == null)
                 {
                     continue;
                 }
 
-                bool empty;
-                using (RegistryKey? k = p.Root.OpenSubKey(p.SubKey))
+                if (hold.Snapshot != null)
                 {
-                    if (k == null)
-                    {
-                        continue;
-                    }
-
-                    empty = k.SubKeyCount == 0 && k.ValueCount == 0;
+                    hold.Snapshot.Restore();
                 }
-
-                if (empty)
+                else if (TraceCleaner.DeleteKeyTree(key))
                 {
-                    p.Root.DeleteSubKey(p.SubKey, throwOnMissingSubKey: false);
+                    removed.Add(key);
                 }
             }
-            catch
+
+            foreach (string key in _createdParents)
             {
-                // Ignore.
+                if (Release(key) != null)
+                {
+                    TraceCleaner.DeleteKeyIfEmpty(key);
+                    if (!TraceCleaner.KeyExists(key))
+                    {
+                        removed.Add(key);
+                    }
+                }
             }
         }
+
+        if (removed.Count > 0)
+        {
+            KitLedger.Update(AppPaths.BaseDir, l =>
+            {
+                foreach (string key in removed)
+                {
+                    l.RemoveTrace(TraceKinds.RegistryKey, key);
+                }
+            });
+        }
+    }
+}
+
+/// <summary>A registry key with all its values and subkeys, to put back exactly as it was.</summary>
+public sealed class KeySnapshot
+{
+    private readonly string _path;
+    private readonly List<(string Name, object Value, RegistryValueKind Kind)> _values = new();
+    private readonly List<KeySnapshot> _children = new();
+    private readonly string _name;
+
+    private KeySnapshot(string path, string name)
+    {
+        _path = path;
+        _name = name;
     }
 
-    private static bool KeyExists(string key)
+    public static KeySnapshot? Take(string key)
     {
         try
         {
-            if (Split(key) is not { } p)
+            if (!TraceCleaner.TrySplitKey(key, out RegistryKey root, out string sub))
             {
-                return true; // Unknown hive: treat as existing so it is never deleted.
+                return null;
             }
 
-            using RegistryKey? k = p.Root.OpenSubKey(p.SubKey);
-            return k != null;
+            using RegistryKey? k = root.OpenSubKey(sub);
+            if (k == null)
+            {
+                return null;
+            }
+
+            var snap = new KeySnapshot(key, "");
+            snap.Read(k, 0);
+            return snap;
         }
         catch
         {
-            return true;
+            return null;
         }
     }
 
-    private readonly record struct KeyPath(RegistryKey Root, string SubKey);
-
-    private static KeyPath? Split(string key)
+    private void Read(RegistryKey key, int depth)
     {
-        int slash = key.IndexOf('\\');
-        if (slash <= 0 || slash == key.Length - 1)
+        foreach (string name in key.GetValueNames())
         {
-            return null;
+            object? value = key.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+            if (value != null)
+            {
+                _values.Add((name, value, key.GetValueKind(name)));
+            }
         }
 
-        string hive = key.Substring(0, slash).ToUpperInvariant();
-        string sub = key.Substring(slash + 1);
-        RegistryKey? root = hive switch
+        // Tool settings are shallow; the limit only guards against pathological trees.
+        if (depth >= 8)
         {
-            "HKCU" or "HKEY_CURRENT_USER" => Registry.CurrentUser,
-            "HKLM" or "HKEY_LOCAL_MACHINE" => Registry.LocalMachine,
-            _ => null,
-        };
+            return;
+        }
 
-        return root == null ? null : new KeyPath(root, sub);
+        foreach (string sub in key.GetSubKeyNames())
+        {
+            using RegistryKey? child = key.OpenSubKey(sub);
+            if (child != null)
+            {
+                var snap = new KeySnapshot(_path + "\\" + sub, sub);
+                snap.Read(child, depth + 1);
+                _children.Add(snap);
+            }
+        }
+    }
+
+    public void Restore()
+    {
+        try
+        {
+            if (!TraceCleaner.TrySplitKey(_path, out RegistryKey root, out string sub))
+            {
+                return;
+            }
+
+            using RegistryKey key = root.CreateSubKey(sub);
+            Write(key);
+        }
+        catch
+        {
+            // Access denied or key in use: leave it as the tool left it.
+        }
+    }
+
+    private void Write(RegistryKey key)
+    {
+        var names = new HashSet<string>(_values.Select(v => v.Name), StringComparer.OrdinalIgnoreCase);
+        foreach (string name in key.GetValueNames().Where(n => !names.Contains(n)))
+        {
+            key.DeleteValue(name, false);
+        }
+
+        foreach ((string name, object value, RegistryValueKind kind) in _values)
+        {
+            try
+            {
+                key.SetValue(name, value, kind);
+            }
+            catch
+            {
+                // A value type .NET cannot write back (REG_NONE and similar); keep restoring the rest.
+            }
+        }
+
+        var children = new HashSet<string>(_children.Select(c => c._name), StringComparer.OrdinalIgnoreCase);
+        foreach (string extra in key.GetSubKeyNames().Where(n => !children.Contains(n)))
+        {
+            key.DeleteSubKeyTree(extra, false);
+        }
+
+        foreach (KeySnapshot child in _children)
+        {
+            using RegistryKey sub = key.CreateSubKey(child._name);
+            child.Write(sub);
+        }
     }
 }

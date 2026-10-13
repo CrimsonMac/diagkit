@@ -258,7 +258,7 @@ public static class HealthRules
         {
             Add(f, Severity.Info, "Drives", "smart-missing", "Drive check was limited",
                 "Without smartctl, DiagKit only sees Windows' own healthy/unhealthy flag, which misses early signs like reallocated or pending sectors.",
-                "Put smartctl.exe in tools\\smartmontools (extract it from the smartmontools installer with 7-Zip) and run the check again.");
+                "Run setup.exe again to add smartctl to the kit (or put smartctl.exe in Tools\\smartmontools), then run the check again.");
         }
     }
 

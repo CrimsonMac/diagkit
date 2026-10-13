@@ -28,6 +28,7 @@ public static class ToolLauncher
     {
         ToolFixups.BeforeLaunch(tool, exePath);
         RegistryTraceGuard guard = RegistryTraceGuard.Capture(tool.RegistryTraces, tool.RegistryParents);
+        ToolTraceWatch watch = ToolTraceWatch.Begin(tool);
         string args = string.Join(" ", new[] { tool.Arguments, extraArguments }).Trim();
         string workDir = Path.GetDirectoryName(exePath) ?? AppPaths.BaseDir;
 
@@ -38,16 +39,23 @@ public static class ToolLauncher
         }
         catch (Win32Exception ex)
         {
+            guard.Cleanup();
+            watch.End(clean: false);
             return new LaunchOutcome { Started = false, Error = Describe(tool.Name, ex) };
         }
         catch (Exception ex)
         {
+            guard.Cleanup();
+            watch.End(clean: false);
             return new LaunchOutcome { Started = false, Error = $"{tool.Name} could not start: {ex.Message}" };
         }
 
         if (process == null)
         {
             // ShellExecute handed off to an existing instance (single-instance tools do this).
+            // The running copy owns the registry and driver state, so this launch cleans nothing.
+            guard.Release();
+            watch.End(clean: false);
             return new LaunchOutcome { Started = true };
         }
 
@@ -72,7 +80,7 @@ public static class ToolLauncher
                 // Exit code unavailable (process handle already gone).
             }
 
-            if (!guard.HasWork)
+            if (!guard.HasWork && !watch.HasWork)
             {
                 exited.TrySetResult(code);
                 return;
@@ -82,6 +90,7 @@ public static class ToolLauncher
             Task.Delay(300).ContinueWith(_ =>
             {
                 guard.Cleanup();
+                watch.End();
                 exited.TrySetResult(code);
             }, TaskScheduler.Default);
         }

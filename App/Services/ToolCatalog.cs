@@ -42,6 +42,8 @@ public static class ToolCatalog
         string path = AppPaths.ManifestPath;
         string? warning = null;
         string text;
+        MoveLegacyManifest();
+        EnsureToolsRoot();
 
         if (File.Exists(path))
         {
@@ -56,7 +58,7 @@ public static class ToolCatalog
             }
             catch (Exception ex)
             {
-                warning = "Could not write tools.json next to DiagKit (" + ex.Message + "). Using the built-in tool list.";
+                warning = @"Could not write Tools\tools.json (" + ex.Message + "). Using the built-in tool list.";
             }
         }
 
@@ -81,7 +83,6 @@ public static class ToolCatalog
             .ToList();
         Upgrade(manifest);
 
-        EnsureToolFolders(manifest);
         return new ManifestLoadResult { Manifest = manifest, Warning = warning };
     }
 
@@ -99,26 +100,66 @@ public static class ToolCatalog
                 t.Hidden = true;
             }
         }
+
+        if (manifest.Version < 3)
+        {
+            // Version 3: new tools, and the driver services, temp files and registry keys each tool leaves behind.
+            List<ToolDefinition> defaults = JsonSerializer.Deserialize<ToolManifest>(ReadDefaultManifestText(), JsonOptions)?.Tools ?? new List<ToolDefinition>();
+            foreach (ToolDefinition d in defaults)
+            {
+                ToolDefinition? mine = manifest.Tools.FirstOrDefault(t => t.Id.Equals(d.Id, StringComparison.OrdinalIgnoreCase));
+                if (mine == null)
+                {
+                    manifest.Tools.Add(d);
+                    continue;
+                }
+
+                AddMissing(mine.RegistryTraces, d.RegistryTraces);
+                AddMissing(mine.RegistryParents, d.RegistryParents);
+                AddMissing(mine.Services, d.Services);
+                AddMissing(mine.Files, d.Files);
+            }
+        }
     }
 
-    /// <summary>Creates tools\&lt;folder&gt; for every entry so it is obvious where each exe goes.</summary>
-    private static void EnsureToolFolders(ToolManifest manifest)
+    private static void AddMissing(List<string> list, IEnumerable<string> extra)
+    {
+        foreach (string e in extra.Where(e => !list.Contains(e, StringComparer.OrdinalIgnoreCase)))
+        {
+            list.Add(e);
+        }
+    }
+
+    /// <summary>
+    /// Creates Tools\ only. A tool's own folder is created when it is first needed (by setup, or by "open folder"
+    /// on a missing tool), so tools that were left out of the kit leave no empty folders behind.
+    /// </summary>
+    private static void EnsureToolsRoot()
     {
         try
         {
             Directory.CreateDirectory(AppPaths.ToolsRoot);
-            foreach (string folder in manifest.Tools.Select(t => t.Folder).Where(f => !string.IsNullOrWhiteSpace(f)).Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                string dir = Path.Combine(AppPaths.ToolsRoot, folder);
-                if (!Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-            }
         }
         catch
         {
             // Read-only media: resolution still works for whatever exists.
+        }
+    }
+
+    /// <summary>Kits set up before 1.1 kept tools.json next to DiagKit.exe; it now lives in Tools\.</summary>
+    private static void MoveLegacyManifest()
+    {
+        try
+        {
+            if (File.Exists(AppPaths.LegacyManifestPath) && !File.Exists(AppPaths.ManifestPath))
+            {
+                Directory.CreateDirectory(AppPaths.ToolsRoot);
+                File.Move(AppPaths.LegacyManifestPath, AppPaths.ManifestPath);
+            }
+        }
+        catch
+        {
+            // Read-only kit: the old file stays where it is and the built-in list is used.
         }
     }
 

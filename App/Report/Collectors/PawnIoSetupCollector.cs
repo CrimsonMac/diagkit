@@ -28,7 +28,7 @@ public sealed class PawnIoSetupCollector : ICollector
         if (setup == null)
         {
             status.IsPartial = true;
-            status.Detail = "PawnIO setup is not in the kit (fetch-tools.ps1 downloads it)";
+            status.Detail = "PawnIO setup is not in the kit (setup.exe downloads it)";
             return;
         }
 
@@ -36,6 +36,8 @@ public sealed class PawnIoSetupCollector : ICollector
         ProcessResult res = await ProcessRunner.RunAsync(setup, "-install -silent", Timeout - TimeSpan.FromSeconds(10), ct).ConfigureAwait(false);
         if (SystemProbe.IsPawnIoInstalled())
         {
+            // PawnIO was not on this PC before, so Uninstall may remove it again.
+            Kit.KitLedger.Update(AppPaths.BaseDir, l => l.AddTrace(Kit.TraceKinds.PawnIo, "PawnIO", "installed by the health check"));
             status.Detail = "Installed PawnIO for CPU temperatures";
             return;
         }

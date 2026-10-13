@@ -23,25 +23,7 @@ public static class SystemProbe
     /// LibreHardwareMonitor 0.9.5+ reads CPU temperatures through the PawnIO driver, which has to be
     /// installed on the PC. LHM itself checks this uninstall key; the service key is a fallback.
     /// </summary>
-    public static bool IsPawnIoInstalled()
-    {
-        try
-        {
-            using RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-            using RegistryKey? uninstall = hklm.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO");
-            if (uninstall != null)
-            {
-                return true;
-            }
-
-            using RegistryKey? service = hklm.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\PawnIO");
-            return service != null;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    public static bool IsPawnIoInstalled() => Kit.PawnIo.IsInstalled();
 
     /// <summary>Memory Integrity (HVCI) blocks some older kernel drivers that diagnostic tools ship.</summary>
     public static bool? IsMemoryIntegrityEnabled()

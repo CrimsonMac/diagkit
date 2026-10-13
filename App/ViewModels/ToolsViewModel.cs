@@ -68,7 +68,7 @@ public sealed class ToolViewModel : ObservableObject
 
     public string LocationText => IsAvailable
         ? Compat.GetRelativePath(AppPaths.BaseDir, _exePath!)
-        : $"Not found. Put {Definition.Executables.FirstOrDefault()} in tools\\{Definition.Folder}, then Rescan.";
+        : $"Not found. Put {Definition.Executables.FirstOrDefault()} in Tools\\{Definition.Folder}, then Rescan.";
 
     public object? Icon
     {

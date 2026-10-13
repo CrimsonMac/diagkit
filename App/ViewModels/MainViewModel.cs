@@ -165,6 +165,7 @@ public sealed class MainViewModel : ObservableObject
     public async Task StartAsync()
     {
         await Tools.LoadAsync();
+        _ = LeftoverCleanup.RunAsync();
     }
 
     public async void ShowNotice(string text, LedState led)

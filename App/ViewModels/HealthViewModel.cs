@@ -206,7 +206,7 @@ public sealed class HealthViewModel : ObservableObject
         CanInstallPawnIo = !pawn && pawnSetup;
         string pawnText = pawn ? "Installed: CPU temperatures available"
             : pawnSetup ? "Not installed on this PC: tick 'Install the CPU temperature driver' above to add it"
-            : "Not installed, and PawnIO setup is not in the kit: no CPU temperatures (fetch-tools.ps1 downloads it)";
+            : "Not installed, and PawnIO setup is not in the kit: no CPU temperatures (setup.exe downloads it)";
 
         ComponentItem Item(string id, string name, string have, string missing)
         {
@@ -216,7 +216,7 @@ public sealed class HealthViewModel : ObservableObject
 
         Components = new List<ComponentItem>
         {
-            Item("smartctl", "smartctl", "Full SMART data for every drive", "Missing: only Windows' basic drive status (add tools\\smartmontools\\smartctl.exe)"),
+            Item("smartctl", "smartctl", "Full SMART data for every drive", "Missing: only Windows' basic drive status (add Tools\\smartmontools\\smartctl.exe)"),
             Item("bluescreenview", "BlueScreenView", "Names the driver behind each crash", "Missing: crashes are counted but not attributed"),
             Item("autorunsc", "autorunsc", "Checks startup entries for signatures", "Missing: startup scan is skipped (comes in the Autoruns zip)"),
             new(pawn ? LedState.Ok : LedState.Off, "PawnIO driver", pawnText),

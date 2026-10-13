@@ -30,6 +30,13 @@ public sealed class ToolDefinition
     public string? Arguments { get; set; }
     public List<string> RegistryTraces { get; set; } = new();
     public List<string> RegistryParents { get; set; } = new();
+
+    /// <summary>Driver service names (wildcards allowed) the tool may create; removed after it exits if they are new.</summary>
+    public List<string> Services { get; set; } = new();
+
+    /// <summary>Files the tool leaves outside its folder ("%TEMP%\x*.sys"); removed after it exits if created by that run.</summary>
+    public List<string> Files { get; set; } = new();
+
     public bool Hidden { get; set; }
     public string? Homepage { get; set; }
 }

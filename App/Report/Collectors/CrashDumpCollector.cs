@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using DiagKit.Models;
+using DiagKit.Services;
 using Microsoft.Win32;
 
 namespace DiagKit.Report.Collectors;
@@ -58,7 +60,20 @@ public sealed class CrashDumpCollector : ICollector
         status.Detail = $"Analysing {TextUtil.Plural(dumps.Count, "dump")}";
         // Name the folder explicitly: BlueScreenView otherwise uses whatever its .cfg remembers from the last GUI session.
         string args = $"/LoadFrom 1 /MiniDumpFolder \"{dumpDir.TrimEnd('\\')}\" /sxml \"{xmlPath}\"";
-        ProcessResult res = await ProcessRunner.RunAsync(bsv, args, TimeSpan.FromSeconds(75), ct).ConfigureAwait(false);
+        // BlueScreenView keeps its settings in the registry when its folder is read-only; leave none behind.
+        ToolDefinition? def = ctx.ToolDefinition("bluescreenview");
+        RegistryTraceGuard guard = RegistryTraceGuard.Capture(
+            def?.RegistryTraces ?? new List<string>(), def?.RegistryParents ?? new List<string>());
+        ProcessResult res;
+        try
+        {
+            res = await ProcessRunner.RunAsync(bsv, args, TimeSpan.FromSeconds(75), ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            guard.Cleanup();
+        }
+
         if (res.TimedOut || !File.Exists(xmlPath))
         {
             status.IsPartial = true;
