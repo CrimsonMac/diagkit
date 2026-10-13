@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Win32;
 
 namespace DiagKit.Services;
@@ -7,11 +8,17 @@ namespace DiagKit.Services;
 /// <summary>
 /// Snapshots which of a tool's registry keys already exist before launch and, after the tool exits,
 /// deletes only the ones it created. Existing settings of the PC owner are never touched.
+/// Keys are reference-counted across guards, so overlapping launches that share a key (two copies of
+/// a tool, or Autoruns and Process Explorer under HKCU\Software\Sysinternals) clean up once, after the last one exits.
 /// </summary>
 public sealed class RegistryTraceGuard
 {
+    // Keys DiagKit's tools created and that are still in use, with the number of guards holding each.
+    private static readonly Dictionary<string, int> Owned = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly List<string> _createdKeys = new();
     private readonly List<string> _createdParents = new();
+    private int _cleaned;
 
     private RegistryTraceGuard()
     {
@@ -20,31 +27,74 @@ public sealed class RegistryTraceGuard
     public static RegistryTraceGuard Capture(IEnumerable<string> traces, IEnumerable<string> parents)
     {
         var guard = new RegistryTraceGuard();
-        foreach (string key in traces)
+        lock (Owned)
         {
-            if (!KeyExists(key))
-            {
-                guard._createdKeys.Add(key);
-            }
-        }
-
-        foreach (string key in parents)
-        {
-            if (!KeyExists(key))
-            {
-                guard._createdParents.Add(key);
-            }
+            Claim(traces, guard._createdKeys);
+            Claim(parents, guard._createdParents);
         }
 
         return guard;
+    }
+
+    private static void Claim(IEnumerable<string> keys, List<string> claimed)
+    {
+        foreach (string key in keys)
+        {
+            if (Owned.TryGetValue(key, out int holders))
+            {
+                Owned[key] = holders + 1;
+                claimed.Add(key);
+            }
+            else if (!KeyExists(key))
+            {
+                Owned[key] = 1;
+                claimed.Add(key);
+            }
+        }
+    }
+
+    /// <summary>Drops this guard's hold on a key; true when no other running tool still holds it.</summary>
+    private static bool Release(string key)
+    {
+        if (!Owned.TryGetValue(key, out int holders))
+        {
+            return false;
+        }
+
+        if (holders > 1)
+        {
+            Owned[key] = holders - 1;
+            return false;
+        }
+
+        Owned.Remove(key);
+        return true;
     }
 
     public bool HasWork => _createdKeys.Count > 0 || _createdParents.Count > 0;
 
     public void Cleanup()
     {
+        if (Interlocked.Exchange(ref _cleaned, 1) != 0)
+        {
+            return;
+        }
+
+        lock (Owned)
+        {
+            CleanupLocked();
+        }
+    }
+
+    private void CleanupLocked()
+    {
         foreach (string key in _createdKeys)
         {
+            if (!Release(key))
+            {
+                continue;
+            }
+
             try
             {
                 if (Split(key) is { } p)
@@ -60,6 +110,11 @@ public sealed class RegistryTraceGuard
 
         foreach (string key in _createdParents)
         {
+            if (!Release(key))
+            {
+                continue;
+            }
+
             try
             {
                 if (Split(key) is not { } p)
