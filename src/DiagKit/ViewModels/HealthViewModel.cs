@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using DiagKit.Models;
 using DiagKit.Report;
+using DiagKit.Report.Collectors;
 using DiagKit.Services;
 
 namespace DiagKit.ViewModels;
@@ -34,6 +35,7 @@ public sealed class HealthViewModel : ObservableObject
     private string _runTitle = "";
     private List<ComponentItem> _components = new();
     private CancellationTokenSource? _cts;
+    private CollectorStatus? _stressStatus;
 
     public HealthViewModel(ToolsViewModel tools, Action<string, LedState> notify, Action reportsChanged)
     {
@@ -218,6 +220,7 @@ public sealed class HealthViewModel : ObservableObject
         };
 
         List<PlannedStep> plan = ReportRunner.Plan(options);
+        _stressStatus = plan.FirstOrDefault(s => s.Collector is StressCollector)?.Status;
         foreach (CollectorStatus old in Steps)
         {
             old.PropertyChanged -= OnStepChanged;
@@ -283,10 +286,9 @@ public sealed class HealthViewModel : ObservableObject
         // Called from worker threads too; reading a snapshot of the states is enough here.
         CollectorStatus[] steps = Steps.ToArray();
         int done = steps.Count(s => s.State is StepState.Done or StepState.Partial or StepState.Failed or StepState.Skipped);
-        CollectorStatus? running = steps.FirstOrDefault(s => s.State == StepState.Running && s.Name == "CPU load test");
         ProgressText = done == steps.Length
             ? "Writing the report"
-            : running != null
+            : _stressStatus?.State == StepState.Running
                 ? "Running the CPU load test. The PC will get louder for a moment."
                 : $"{done} of {steps.Length} steps done";
     }
