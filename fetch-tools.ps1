@@ -3,8 +3,9 @@
     Downloads or updates the portable tools in a DiagKit folder.
 
 .DESCRIPTION
-    Most tools have versioned download URLs, so instead of hard-coding them this script reads the
-    community-maintained Scoop manifests (github.com/ScoopInstaller), which carry the current URL and a
+    Every tool has a list of sources that are tried in order, so one site being down does not stop the kit
+    from updating. Most tools have versioned download URLs, so instead of hard-coding them this script reads
+    the community-maintained Scoop manifests (github.com/ScoopInstaller), which carry the current URL and a
     hash for each release. Scoop itself is NOT needed or installed. Every download is verified:
       - Scoop sources: against the manifest's hash
       - Sysinternals: against Microsoft's Authenticode signature
@@ -32,35 +33,50 @@ if ($Only) { $Only = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 # A non-browser user agent makes SourceForge send the file instead of its "your download will start" page.
-$UserAgent = 'DiagKit-fetch/1.0 (PowerShell)'
+$UserAgent = 'DiagKit-fetch/1.1 (PowerShell)'
 $KeepExtensions = @('.ini', '.cfg')
 $StampName = '.diagkit-source'
 
 # Folder names match tools.json, so DiagKit finds everything on the next Rescan.
+# Sources are tried in order until one downloads and verifies. Kinds:
+#   scoop  Scoop manifest (bucket/name): current version, URL and hash
+#   url    fixed link; ETag/Last-Modified tell whether it changed
+# Mirrors: alternative hosts serving the same path; safe because the hash is checked.
+# Signer: the Authenticode signer every .exe/.dll must carry (certificate subject name, exact match).
 $Tools = @(
-    @{ Name = 'HWiNFO64';         Folder = 'HWiNFO64';        Scoop = 'Extras/hwinfo' }
-    @{ Name = 'CPU-Z';            Folder = 'CPU-Z';           Scoop = 'Extras/cpu-z' }
+    @{ Name = 'HWiNFO64';         Folder = 'HWiNFO64';        Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/hwinfo' }) }
+    @{ Name = 'CPU-Z';            Folder = 'CPU-Z';           Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/cpu-z' }) }
     # TechPowerUp's mirrors refuse some regions/networks (404 or an HTML page); the hash makes trying others safe.
-    @{ Name = 'GPU-Z';            Folder = 'GPU-Z';           Scoop = 'Extras/gpu-z'
-       Mirrors = @('https://us1-dl.techpowerup.com', 'https://us2-dl.techpowerup.com')
+    @{ Name = 'GPU-Z';            Folder = 'GPU-Z'
+       Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/gpu-z'; Mirrors = @('https://us1-dl.techpowerup.com', 'https://us2-dl.techpowerup.com') })
        Manual = 'Download it once from https://www.techpowerup.com/gpuz/ into tools\GPU-Z; the next run checks it against the same hash and marks it up to date.' }
-    @{ Name = 'CrystalDiskInfo';  Folder = 'CrystalDiskInfo'; Scoop = 'Extras/crystaldiskinfo' }
-    @{ Name = 'CrystalDiskMark';  Folder = 'CrystalDiskMark'; Scoop = 'Extras/crystaldiskmark' }
-    @{ Name = 'WizTree';          Folder = 'WizTree';         Scoop = 'Extras/wiztree' }
-    @{ Name = 'Everything';       Folder = 'Everything';      Scoop = 'Extras/everything' }
-    @{ Name = 'smartctl';         Folder = 'smartmontools';   Scoop = 'Main/smartmontools'; Pick = 'smartctl.exe' }
-    @{ Name = 'Autoruns';         Folder = 'Autoruns';        Url = 'https://download.sysinternals.com/files/Autoruns.zip';        Signer = 'Microsoft Corporation' }
-    @{ Name = 'Process Explorer'; Folder = 'ProcessExplorer'; Url = 'https://download.sysinternals.com/files/ProcessExplorer.zip'; Signer = 'Microsoft Corporation' }
-    @{ Name = 'RAMMap';           Folder = 'RAMMap';          Url = 'https://download.sysinternals.com/files/RAMMap.zip';          Signer = 'Microsoft Corporation' }
-    @{ Name = 'BlueScreenView';   Folder = 'BlueScreenView';  Url = 'https://www.nirsoft.net/utils/bluescreenview-x64.zip' }
-    @{ Name = 'PawnIO setup';     Folder = 'PawnIO';          Url = 'https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe' }
+    @{ Name = 'CrystalDiskInfo';  Folder = 'CrystalDiskInfo'; Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/crystaldiskinfo' }) }
+    @{ Name = 'CrystalDiskMark';  Folder = 'CrystalDiskMark'; Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/crystaldiskmark' }) }
+    @{ Name = 'WizTree';          Folder = 'WizTree';         Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/wiztree' }) }
+    @{ Name = 'Everything';       Folder = 'Everything';      Sources = @(@{ Kind = 'scoop'; Spec = 'Extras/everything' }) }
+    @{ Name = 'smartctl';         Folder = 'smartmontools';   Pick = 'smartctl.exe'; Sources = @(@{ Kind = 'scoop'; Spec = 'Main/smartmontools' }) }
+    @{ Name = 'Autoruns';         Folder = 'Autoruns';        Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/Autoruns.zip' }) }
+    @{ Name = 'Process Explorer'; Folder = 'ProcessExplorer'; Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/ProcessExplorer.zip' }) }
+    @{ Name = 'RAMMap';           Folder = 'RAMMap';          Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/RAMMap.zip' }) }
+    @{ Name = 'BlueScreenView';   Folder = 'BlueScreenView';  Sources = @(@{ Kind = 'url'; Url = 'https://www.nirsoft.net/utils/bluescreenview-x64.zip' }) }
+    @{ Name = 'PawnIO setup';     Folder = 'PawnIO';          Sources = @(@{ Kind = 'url'; Url = 'https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe' }) }
 )
 
 # ------------------------------------------------------------------ helpers
 
 function Get-ScoopManifest([string]$Spec) {
+    # raw.githubusercontent.com first; jsDelivr mirrors the same repositories if GitHub's raw host is down.
     $bucket, $name = $Spec -split '/', 2
-    Invoke-RestMethod -Uri "https://raw.githubusercontent.com/ScoopInstaller/$bucket/master/bucket/$name.json" -UserAgent $UserAgent
+    $urls = @(
+        "https://raw.githubusercontent.com/ScoopInstaller/$bucket/master/bucket/$name.json"
+        "https://cdn.jsdelivr.net/gh/ScoopInstaller/$bucket@master/bucket/$name.json"
+    )
+    $errors = @()
+    foreach ($u in $urls) {
+        try { return Invoke-RestMethod -Uri $u -UserAgent $UserAgent }
+        catch { $errors += "$(([Uri]$u).Host): $($_.Exception.Message)" }
+    }
+    throw ("Could not read the Scoop manifest $Spec. " + ($errors -join '; '))
 }
 
 function Resolve-ScoopSource($Manifest) {
@@ -84,6 +100,48 @@ function Split-DownloadUrl([string]$Url) {
     }
     if (-not $name) { $name = [IO.Path]::GetFileName(([Uri]$Url).AbsolutePath) }
     [pscustomobject]@{ Url = $Url; FileName = $name }
+}
+
+function Get-MirrorUrls([string]$Url, $Mirrors) {
+    # The same path on each mirror host, without repeating a host already in the list (http and https count as one).
+    $list = @($Url)
+    foreach ($mirror in @($Mirrors)) {
+        if ($mirror) { $list += $mirror.TrimEnd('/') + ([Uri]$Url).PathAndQuery }
+    }
+    $seen = @{}
+    foreach ($u in $list) {
+        $key = ([Uri]$u).Host.ToLowerInvariant() + ([Uri]$u).PathAndQuery
+        if (-not $seen.ContainsKey($key)) { $seen[$key] = $true; $u }
+    }
+}
+
+function Resolve-Source($Source) {
+    # Turns a source entry into what to download: label, stamp, candidate URLs, hash, file name.
+    switch ($Source.Kind) {
+        'scoop' {
+            $s = Resolve-ScoopSource (Get-ScoopManifest $Source.Spec)
+            $dl = Split-DownloadUrl $s.Url
+            return [pscustomobject]@{
+                Label = "version $($s.Version)"; Stamp = "scoop:$($s.Version)"; Hash = $s.Hash; ExtractDir = $s.ExtractDir
+                FileName = $dl.FileName; Urls = @(Get-MirrorUrls $dl.Url $Source.Mirrors)
+            }
+        }
+        'url' {
+            $dl = Split-DownloadUrl $Source.Url
+            return [pscustomobject]@{
+                Label = 'latest'; Stamp = (Get-RemoteStamp $Source.Url); Hash = ''; ExtractDir = ''
+                FileName = $dl.FileName; Urls = @($dl.Url)
+            }
+        }
+        default { throw "Unknown source kind '$($Source.Kind)'." }
+    }
+}
+
+function Get-SourceName($Source) {
+    switch ($Source.Kind) {
+        'scoop' { "Scoop manifest $($Source.Spec)" }
+        default { ([Uri]$Source.Url).Host }
+    }
 }
 
 function Save-Download([string]$Url, [string]$Path) {
@@ -111,14 +169,14 @@ function Save-VerifiedDownload([string[]]$Urls, [string]$Path, [string]$Hash) {
             if ($Urls.Count -gt 1) { Write-Host "    $(([Uri]$url).Host) failed ($($_.Exception.Message)), trying next mirror" -ForegroundColor DarkYellow }
         }
     }
-    throw ('All download sources failed. ' + ($errors -join '; '))
+    throw ('All download links failed. ' + ($errors -join '; '))
 }
 
 function Find-VerifiedCopy([string]$Folder, [string]$FileName, [string]$Hash) {
     # A single-file tool placed by hand counts as installed if it matches the manifest hash.
     if (-not $Hash -or -not (Test-Path $Folder)) { return $null }
     $ext = [IO.Path]::GetExtension($FileName)
-    if ($ext -in '.zip', '.7z') { return $null }
+    if ($ext -in '.zip', '.7z', '.rar') { return $null }
     foreach ($f in Get-ChildItem $Folder -File -Filter "*$ext") {
         if (Test-FileHash $f.FullName $Hash) { return $f.FullName }
     }
@@ -179,7 +237,7 @@ function Expand-Download([string]$File, [string]$Stage, [string]$ExtractDir, [st
         '.zip' {
             [IO.Compression.ZipFile]::ExtractToDirectory($File, $raw)
         }
-        '.7z' {
+        { $_ -in '.7z', '.rar' } {
             $7z = Get-SevenZip
             & $7z x $File "-o$raw" -y | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "7-Zip failed to extract $File (exit code $LASTEXITCODE)." }
@@ -210,11 +268,18 @@ function Expand-Download([string]$File, [string]$Stage, [string]$ExtractDir, [st
     return $source
 }
 
+function Get-SignerName([string]$Path) {
+    $sig = Get-AuthenticodeSignature $Path
+    if ($sig.Status -ne 'Valid' -or -not $sig.SignerCertificate) { return $null }
+    $sig.SignerCertificate.GetNameInfo([Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
+}
+
 function Assert-Signed([string]$Folder, [string]$Signer) {
     foreach ($exe in Get-ChildItem $Folder -Recurse -Include *.exe, *.dll) {
-        $sig = Get-AuthenticodeSignature $exe.FullName
-        if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Subject -notmatch [regex]::Escape("CN=$Signer")) {
-            throw "$($exe.Name) is not validly signed by $Signer (status: $($sig.Status)). Not installing it."
+        $name = Get-SignerName $exe.FullName
+        if ($name -ne $Signer) {
+            $got = if ($name) { "signed by $name" } else { "status: $((Get-AuthenticodeSignature $exe.FullName).Status)" }
+            throw "$($exe.Name) is not validly signed by $Signer ($got). Not installing it."
         }
     }
 }
@@ -237,6 +302,76 @@ function Test-Present([string]$Folder) {
     [bool](Get-ChildItem $Folder -Recurse -File | Where-Object { $_.Name -ne $StampName } | Select-Object -First 1)
 }
 
+function Update-Tool($t) {
+    # Tries each source in turn; returns a result row, or throws when every source failed.
+    $dest = Join-Path $ToolsRoot $t.Folder
+    $stampFile = Join-Path $dest $StampName
+    $present = Test-Present $dest
+    $current = if (Test-Path $stampFile) { (Get-Content $stampFile -Raw).Trim() } else { '' }
+    $sources = @($t.Sources)
+    $errors = @()
+
+    for ($i = 0; $i -lt $sources.Count; $i++) {
+        $s = $sources[$i]
+        $sourceName = Get-SourceName $s
+        $more = $i -lt $sources.Count - 1
+        try {
+            $src = Resolve-Source $s
+            $label = $src.Label
+            if ($i -gt 0) { $label += " via $sourceName" }
+
+            $upToDate = $present -and $src.Stamp -and ($current -eq $src.Stamp)
+            if (-not $upToDate -and -not $Force -and $src.Hash) {
+                $copy = Find-VerifiedCopy $dest $src.FileName $src.Hash
+                if ($copy) {
+                    if (-not $Check) { Set-Content -Path $stampFile -Value $src.Stamp -Encoding ASCII }
+                    Write-Host "    up to date: $(Split-Path $copy -Leaf) matches the $($src.Label) hash"
+                    return [pscustomobject]@{ Tool = $t.Name; Result = 'up to date'; Detail = "$label (verified local copy)" }
+                }
+            }
+
+            if ($upToDate -and -not $Force) {
+                Write-Host "    up to date ($label)"
+                return [pscustomobject]@{ Tool = $t.Name; Result = 'up to date'; Detail = $label }
+            }
+
+            if ($Check) {
+                $state = if (-not $present) { 'missing' } elseif (-not $src.Stamp) { 'unknown (no version info)' } else { 'update available' }
+                Write-Host "    $state ($label)"
+                return [pscustomobject]@{ Tool = $t.Name; Result = $state; Detail = $label }
+            }
+
+            $stage = Join-Path $Work ($t.Folder + "-$i")
+            New-Item -ItemType Directory -Force -Path $stage | Out-Null
+            $file = Join-Path $stage $src.FileName
+            Write-Host "    downloading $label from $(([Uri]$src.Urls[0]).Host)"
+            $used = Save-VerifiedDownload $src.Urls $file $src.Hash
+            if ($used -ne $src.Urls[0]) { Write-Host "    got it from $(([Uri]$used).Host)" }
+            if ($src.Hash) { Write-Host '    hash verified' }
+
+            $content = Expand-Download $file $stage $src.ExtractDir $t.Pick
+            if ($t.Signer) {
+                Assert-Signed $content $t.Signer
+                Write-Host "    signature verified ($($t.Signer))"
+            }
+
+            $copied = Merge-Folder $content $dest
+            if ($src.Stamp) { Set-Content -Path $stampFile -Value $src.Stamp -Encoding ASCII }
+            $verb = if ($present) { 'updated' } else { 'installed' }
+            Write-Host "    $verb ($copied files)" -ForegroundColor Green
+            return [pscustomobject]@{ Tool = $t.Name; Result = $verb; Detail = $label }
+        }
+        catch {
+            $msg = $_.Exception.Message
+            if ($msg -match 'being used by another process') { throw 'a file is in use. Close the tool and run this again.' }
+            $errors += "$($sourceName): $msg"
+            if ($more) { Write-Host "    $sourceName failed ($msg), trying the next source" -ForegroundColor DarkYellow }
+        }
+    }
+
+    throw ($errors -join ' | ')
+}
+
 # ------------------------------------------------------------------ main
 
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
@@ -250,77 +385,11 @@ try {
     foreach ($t in $Tools) {
         if ($Only -and -not ($Only | Where-Object { $_ -eq $t.Name -or $_ -eq $t.Folder })) { continue }
         Write-Host $t.Name -ForegroundColor Cyan
-        $dest = Join-Path $ToolsRoot $t.Folder
-        $stampFile = Join-Path $dest $StampName
-        $present = Test-Present $dest
-        $current = if (Test-Path $stampFile) { (Get-Content $stampFile -Raw).Trim() } else { '' }
-
         try {
-            if ($t.Scoop) {
-                $src = Resolve-ScoopSource (Get-ScoopManifest $t.Scoop)
-                $stamp = "scoop:$($src.Version)"
-                $label = "version $($src.Version)"
-            }
-            else {
-                $src = [pscustomobject]@{ Version = ''; Url = $t.Url; Hash = ''; ExtractDir = '' }
-                $stamp = Get-RemoteStamp $t.Url
-                $label = 'latest'
-            }
-
-            $upToDate = $present -and $stamp -and ($current -eq $stamp)
-            if (-not $upToDate -and -not $Force -and $src.Hash) {
-                $dlName = (Split-DownloadUrl $src.Url).FileName
-                $copy = Find-VerifiedCopy $dest $dlName $src.Hash
-                if ($copy) {
-                    if (-not $Check) { Set-Content -Path $stampFile -Value $stamp -Encoding ASCII }
-                    Write-Host "    up to date: $(Split-Path $copy -Leaf) matches the $label hash"
-                    $results.Add([pscustomobject]@{ Tool = $t.Name; Result = 'up to date'; Detail = "$label (verified local copy)" })
-                    continue
-                }
-            }
-
-            if ($upToDate -and -not $Force) {
-                Write-Host "    up to date ($label)"
-                $results.Add([pscustomobject]@{ Tool = $t.Name; Result = 'up to date'; Detail = $label })
-                continue
-            }
-
-            if ($Check) {
-                $state = if (-not $present) { 'missing' } elseif (-not $stamp) { 'unknown (no version info)' } else { 'update available' }
-                Write-Host "    $state ($label)"
-                $results.Add([pscustomobject]@{ Tool = $t.Name; Result = $state; Detail = $label })
-                continue
-            }
-
-            $dl = Split-DownloadUrl $src.Url
-            $stage = Join-Path $Work $t.Folder
-            New-Item -ItemType Directory -Force -Path $stage | Out-Null
-            $file = Join-Path $stage $dl.FileName
-            $urls = @($dl.Url)
-            foreach ($mirror in @($t.Mirrors)) {
-                if ($mirror) { $urls += $mirror.TrimEnd('/') + ([Uri]$dl.Url).PathAndQuery }
-            }
-            $urls = @($urls | Select-Object -Unique)
-            Write-Host "    downloading $label from $(([Uri]$dl.Url).Host)"
-            $used = Save-VerifiedDownload $urls $file $src.Hash
-            if ($used -ne $dl.Url) { Write-Host "    got it from $(([Uri]$used).Host)" }
-            if ($src.Hash) { Write-Host '    hash verified' }
-
-            $content = Expand-Download $file $stage $src.ExtractDir $t.Pick
-            if ($t.Signer) {
-                Assert-Signed $content $t.Signer
-                Write-Host "    signature verified ($($t.Signer))"
-            }
-
-            $copied = Merge-Folder $content $dest
-            if ($stamp) { Set-Content -Path $stampFile -Value $stamp -Encoding ASCII }
-            $verb = if ($present) { 'updated' } else { 'installed' }
-            Write-Host "    $verb ($copied files)" -ForegroundColor Green
-            $results.Add([pscustomobject]@{ Tool = $t.Name; Result = $verb; Detail = $label })
+            $results.Add((Update-Tool $t))
         }
         catch {
             $msg = $_.Exception.Message
-            if ($msg -match 'being used by another process') { $msg = 'a file is in use. Close the tool and run this again.' }
             if ($t.Manual) { $msg += ' ' + $t.Manual }
             Write-Warning "    $($t.Name): $msg"
             $results.Add([pscustomobject]@{ Tool = $t.Name; Result = 'FAILED'; Detail = $msg })
