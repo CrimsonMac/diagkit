@@ -9,11 +9,11 @@ Built for a USB stick: one exe, a `tools` folder, and a `reports` folder that tr
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on the machine you build on. The PCs you diagnose need nothing, because the build is self-contained.
 
 ```powershell
-.\build.ps1 -Output E:\DiagKit        # build straight onto the stick
-.\fetch-tools.ps1 -Kit E:\DiagKit     # download every tool except TestMem5 (hash/signature verified)
+.\build.ps1 -Output E:\DiagKit        # build onto the stick and download every tool (hash/signature verified)
+.\fetch-tools.ps1 -Kit E:\DiagKit     # later: update the tools without rebuilding
 ```
 
-Run `fetch-tools.ps1` again whenever you like; it only downloads tools that have a new release. `-Check` lists available updates without downloading. TestMem5 is the one manual copy. See [TOOLS.md](TOOLS.md) for sources and how each download is verified. The kit layout:
+Every tool has fallback sources, so one site being down doesn't stop setup. Run `fetch-tools.ps1` again whenever you like; it only downloads tools that have a new release, and `-Check` lists available updates without downloading. See [TOOLS.md](TOOLS.md) for sources and how each download is verified. The kit layout:
 
 ```
 DiagKit\
@@ -30,7 +30,7 @@ For development, open `src\DiagKit\DiagKit.csproj` in Visual Studio 2026 or Ride
 **Tools** (Ctrl+1). Click a tile to launch the tool.
 - Ctrl+F searches; Enter launches the first match and Esc clears the search.
 - Missing tools show where their file goes, and clicking one opens that folder.
-- Hover a tile for its folder button, which is handy for TestMem5 configs.
+- Hover a tile for its folder button, which is handy for TestMem5 configs (anta777's Extreme loads by default; Absolut is in `bin`).
 - DiagKit explains launch failures: Defender quarantine, Smart App Control, a blocked driver, or a tool that closes immediately.
 - Registry keys a tool creates (Sysinternals EULA flags, GPU-Z settings) are removed when it exits, but only if they did not exist before. The PC owner's own settings are never touched.
 
@@ -39,6 +39,7 @@ For development, open `src\DiagKit\DiagKit.csproj` in Visual Studio 2026 or Ride
 | Step | Source | Needs |
 |---|---|---|
 | System overview | WMI, registry | nothing |
+| Sensor driver (when missing) | PawnIO setup, run silently | ticked option; installs a signed driver |
 | Temperatures at idle | LibreHardwareMonitor | PawnIO for CPU temps; GPU works without it |
 | Memory | WMI | nothing |
 | Free space | .NET | nothing |
