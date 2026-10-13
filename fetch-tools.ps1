@@ -45,6 +45,8 @@ $StampName = '.diagkit-source'
 #   techpowerup  TechPowerUp's download form: version and SHA-256 from the download page, links from its mirror list
 #   url     fixed link; ETag/Last-Modified tell whether it changed
 # SaveAs: fixed file name for single-file tools, so an update replaces the old exe instead of adding a second one.
+# FileHashes: pinned SHA-256 per file, for tools with neither a published hash nor a signature.
+# Extras: extra files from a GitHub repo at a fixed commit (raw.githubusercontent.com, then jsDelivr), hash-checked.
 # A download is only installed if it can be verified: by the source's hash, the tool's Signer, or both.
 # Mirrors: alternative hosts serving the same path; safe because the hash is checked.
 # Signer: the Authenticode signer every .exe/.dll must carry (certificate subject name, exact match).
@@ -66,6 +68,24 @@ $Tools = @(
     @{ Name = 'Autoruns';         Folder = 'Autoruns';        Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/Autoruns.zip' }) }
     @{ Name = 'Process Explorer'; Folder = 'ProcessExplorer'; Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/ProcessExplorer.zip' }) }
     @{ Name = 'RAMMap';           Folder = 'RAMMap';          Signer = 'Microsoft Corporation'; Sources = @(@{ Kind = 'url'; Url = 'https://download.sysinternals.com/files/RAMMap.zip' }) }
+    # TestMem5 is unsigned and its author publishes no hashes, so its two binaries are pinned to the known v0.12
+    # builds (testmem.tz.ru has shipped two TM5.exe builds). Any other code in the archive is refused.
+    # The Wayback Machine copy is the fallback; the pinned hashes make an archived copy as safe as the original.
+    @{ Name = 'TestMem5';         Folder = 'TestMem5'
+       FileHashes = @{
+           'TM5.exe'     = @('B7ED4B39DE012E88EC9AD7F21B0AC68A4E863FE078B5C54857A16D37D480CC21', 'ED8056A6B3CDB301D1E1571B9E832AAEF4131249830EAA8860391D5380FA16E6')
+           'bin\MT0.dll' = @('3EE244962C2683022C3BCC78D1A869E755516BBF4D2C1123A8A55E47655731EF')
+       }
+       Sources = @(
+           @{ Kind = 'url'; Url = 'https://testmem.tz.ru/tm5.rar' }
+           @{ Kind = 'url'; Url = 'https://web.archive.org/web/2025id_/https://testmem.tz.ru/tm5.rar' })
+       # TM5's built-in default test is weak. anta777's configs (from the integralfx DDR4 OC guide, pinned to a commit)
+       # give it real coverage: Extreme1 becomes the default bin\MT.cfg, Absolut is there to load for a longer run.
+       Extras = @(
+           @{ Path = 'bin\MT.cfg';                 Hash = 'sha256:E7B17592CBAEA3B8A4F86E015FDEE7062F5409CCE64F58DFD4CDA392F0B60BB5'; Repo = 'integralfx/MemTestHelper'; Commit = 'da422e50ec2170b578301fe9cc77f101143c38a7'; File = 'TM5-Configs/extreme@anta777.cfg' }
+           @{ Path = 'bin\extreme@anta777.cfg';    Hash = 'sha256:E7B17592CBAEA3B8A4F86E015FDEE7062F5409CCE64F58DFD4CDA392F0B60BB5'; Repo = 'integralfx/MemTestHelper'; Commit = 'da422e50ec2170b578301fe9cc77f101143c38a7'; File = 'TM5-Configs/extreme@anta777.cfg' }
+           @{ Path = 'bin\absolut@anta777.cfg';    Hash = 'sha256:967FCD496753C0013D7E682A2F43980EEB87C8B99A023961D35CEC9F7A2310C3'; Repo = 'integralfx/MemTestHelper'; Commit = 'da422e50ec2170b578301fe9cc77f101143c38a7'; File = 'TM5-Configs/absolutnew.cfg' }
+       ) }
     @{ Name = 'BlueScreenView';   Folder = 'BlueScreenView';  Signer = 'Nir Sofer'
        Sources = @(
            @{ Kind = 'scoop'; Spec = 'Nirsoft/bluescreenview' }
@@ -364,6 +384,44 @@ function Assert-Signed([string]$Folder, [string]$Signer) {
     }
 }
 
+function Assert-FileHashes([string]$Folder, [hashtable]$Pinned) {
+    # Every pinned file must be present and match, and no other executable code may come along with them.
+    foreach ($rel in $Pinned.Keys) {
+        $path = Join-Path $Folder $rel
+        if (-not (Test-Path $path)) { throw "$rel is missing from the download." }
+        $hash = (Get-FileHash -Path $path -Algorithm SHA256).Hash
+        if (@($Pinned[$rel]) -notcontains $hash) {
+            throw "$rel does not match a known build (SHA-256 $hash). If the author released a new version, add its hash to fetch-tools.ps1 after checking it."
+        }
+    }
+    foreach ($f in Get-ChildItem $Folder -Recurse -File -Include *.exe, *.dll, *.sys, *.scr, *.com) {
+        $rel = $f.FullName.Substring($Folder.TrimEnd('\', '/').Length).TrimStart('\', '/')
+        if (-not ($Pinned.Keys | Where-Object { $_ -eq $rel })) { throw "$rel is not one of the pinned files. Not installing it." }
+    }
+}
+
+function Add-Extras([string]$Folder, $Extras) {
+    # Extras improve a tool but are not required, so a failure here is a warning, not a failed install.
+    foreach ($x in @($Extras)) {
+        if (-not $x) { continue }
+        $target = Join-Path $Folder $x.Path
+        New-Item -ItemType Directory -Force -Path (Split-Path $target -Parent) | Out-Null
+        $file = ($x.File -split '/' | ForEach-Object { [Uri]::EscapeDataString($_) }) -join '/'
+        $urls = @(
+            "https://raw.githubusercontent.com/$($x.Repo)/$($x.Commit)/$file"
+            "https://cdn.jsdelivr.net/gh/$($x.Repo)@$($x.Commit)/$file"
+        )
+        try {
+            Save-VerifiedDownload $urls $target $x.Hash | Out-Null
+            # Staged only: an existing .cfg in the kit is still kept by Merge-Folder.
+            Write-Host "    fetched $($x.Path)"
+        }
+        catch {
+            Write-Warning "    could not add $($x.Path): $($_.Exception.Message)"
+        }
+    }
+}
+
 function Merge-Folder([string]$From, [string]$To) {
     $count = 0
     foreach ($f in Get-ChildItem $From -Recurse -File) {
@@ -397,7 +455,7 @@ function Update-Tool($t) {
         $more = $i -lt $sources.Count - 1
         try {
             $src = Resolve-Source $s $t
-            if (-not $src.Hash -and -not $t.Signer) { throw 'This source has no hash and the tool has no signer to check, so the download cannot be verified.' }
+            if (-not $src.Hash -and -not $t.Signer -and -not $t.FileHashes) { throw 'This source has no hash and the tool has no signer or pinned hashes to check, so the download cannot be verified.' }
             $label = $src.Label
             # Name the fallback source in the summary; plain links already show their host while downloading.
             if ($i -gt 0) { $label += if ($s.Kind -eq 'url') { ' (fallback link)' } else { " via $sourceName" } }
@@ -438,6 +496,11 @@ function Update-Tool($t) {
                 Assert-Signed $content $t.Signer
                 Write-Host "    signature verified ($($t.Signer))"
             }
+            if ($t.FileHashes) {
+                Assert-FileHashes $content $t.FileHashes
+                Write-Host '    files match the pinned hashes'
+            }
+            Add-Extras $content $t.Extras
 
             $copied = Merge-Folder $content $dest
             if ($src.Stamp) { Set-Content -Path $stampFile -Value $src.Stamp -Encoding ASCII }
@@ -489,7 +552,4 @@ if ($results.Count -eq 0) {
     Write-Warning "No tool matched -Only $($Only -join ', '). Names: $(($Tools | ForEach-Object { $_.Name }) -join ', ')"
 }
 $results | Format-Table -AutoSize -Wrap | Out-String -Width 160 | Write-Host
-if (-not $Only) {
-    Write-Host 'TestMem5 is not available from any download source this script can verify; copy TM5.exe and its bin folder into tools\TestMem5 once (see TOOLS.md).'
-}
 if ($results | Where-Object Result -eq 'FAILED') { exit 1 }
