@@ -66,6 +66,7 @@ public sealed class HealthViewModel : ObservableObject
     public ICommand ShowLastReportCommand { get; }
     public bool IsElevated { get; }
     public string MachineName => Environment.MachineName;
+    public int EventWindowDays => EventLogCollector.Days;
 
     public HealthMode Mode
     {

@@ -17,8 +17,9 @@
                       HorizontalScrollBarVisibility="Disabled" Focusable="False">
             <StackPanel Margin="32,26,32,32" MaxWidth="800" HorizontalAlignment="Left">
                 <TextBlock Text="Health check" Style="{StaticResource Text.PageTitle}" />
-                <TextBlock Style="{StaticResource Text.Lede}" Margin="0,8,0,0"
-                           Text="Reads drive health, 30 days of crash and hardware-error logs, temperatures and startup entries, then explains what it found and what to do about it." />
+                <TextBlock Style="{StaticResource Text.Lede}" Margin="0,8,0,0">
+                    <Run Text="Reads drive health," /> <Run Text="{Binding EventWindowDays, Mode=OneTime}" /> <Run Text="days of crash and hardware-error logs, temperatures and startup entries, then explains what it found and what to do about it." />
+                </TextBlock>
 
                 <Border Style="{StaticResource Card}" Margin="0,24,0,0">
                     <StackPanel>

@@ -13,11 +13,11 @@ namespace DiagKit.Report.Collectors;
 public sealed partial class EventLogCollector : ICollector
 {
     public string Name => "Event logs";
-    public string Description => "30 days of hardware errors, crashes, power losses and disk errors";
+    public string Description => $"{Days} days of hardware errors, crashes, power losses and disk errors";
     public int Phase => 1;
     public TimeSpan Timeout => TimeSpan.FromSeconds(90);
 
-    private const int Days = 30;
+    public const int Days = 30;
     private static readonly string Window = $"TimeCreated[timediff(@SystemTime) <= {Days * 24L * 3600 * 1000}]";
 
     [GeneratedRegex(@"Harddisk(\d+)", RegexOptions.IgnoreCase)]
