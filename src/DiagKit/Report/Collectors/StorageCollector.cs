@@ -190,7 +190,17 @@ public sealed partial class StorageCollector : ICollector
             string rawFile = $"smartctl-{safeName}.json";
             ctx.WriteRaw(rawFile, json);
 
-            DiskInfo? parsed = ParseSmart(json);
+            DiskInfo? parsed;
+            try
+            {
+                parsed = ParseSmart(json);
+            }
+            catch (JsonException)
+            {
+                // Empty or broken output for this device (unsupported USB bridge, smartctl crash); the raw file has it.
+                continue;
+            }
+
             if (parsed == null)
             {
                 continue;
