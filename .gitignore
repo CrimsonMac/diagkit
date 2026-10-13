@@ -19,3 +19,6 @@ Reports/
 # OS junk
 Thumbs.db
 desktop.ini
+
+# Local builds and kits from the old build script (may hold real reports)
+dist/
