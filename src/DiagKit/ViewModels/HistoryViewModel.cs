@@ -111,7 +111,17 @@ public sealed class HistoryViewModel : ObservableObject
 
     internal async Task OpenAsync(ReportListingViewModel item)
     {
-        DiagnosticReport? report = await Task.Run(() => ReportStore.Load(item.Listing.Folder));
+        DiagnosticReport? report;
+        try
+        {
+            report = await Task.Run(() => ReportStore.Load(item.Listing.Folder));
+        }
+        catch (Exception ex)
+        {
+            AppPaths.LogError("Opening report in " + item.Listing.Folder, ex);
+            report = null;
+        }
+
         if (report == null)
         {
             _notify("That report is missing or damaged.", LedState.Warning);
