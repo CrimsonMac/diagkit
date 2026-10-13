@@ -119,7 +119,14 @@ public static class ReportFacts
 
         foreach (GpuInfo g in s.Gpus)
         {
-            facts.Add(new Fact("Graphics", $"{g.Name}, driver {g.DriverVersion} from {TextUtil.Date(g.DriverDate)}"));
+            string driver = (g.DriverVersion, g.DriverDate) switch
+            {
+                (null, null) => "",
+                (null, _) => $", driver from {TextUtil.Date(g.DriverDate)}",
+                (_, null) => $", driver {g.DriverVersion}",
+                _ => $", driver {g.DriverVersion} from {TextUtil.Date(g.DriverDate)}",
+            };
+            facts.Add(new Fact("Graphics", g.Name + driver));
         }
 
         if (r.Memory.Modules.Count > 0)
