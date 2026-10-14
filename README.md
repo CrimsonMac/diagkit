@@ -19,6 +19,8 @@ One small exe, the tools next to it, and reports that travel with the stick. Whe
 - **One-click setup.** setup.exe downloads every tool from its publisher, checks each file against a published hash or signature, and builds or updates a kit on a USB stick or in any folder.
 - **Tool launcher.** Searchable tiles for HWiNFO64, CPU-Z, GPU-Z, CrystalDiskInfo, Sysinternals, NirSoft utilities, TestMem5, Prime95 and more. See [TOOLS.md](TOOLS.md) for the full list.
 - **Health check.** Drive health, WHEA errors, unexpected shutdowns, bug checks, crash dumps, device problems, battery wear, temperatures and an optional CPU load test. Each finding comes with a plain explanation, what to do about it, and the evidence behind it.
+- **Quick actions.** One click checks just the drives, temperatures, crashes, memory, devices, battery or startup programs, or runs a CPU load test; Custom diagnosis runs the checks you tick as one report.
+- **Light and dark.** Follows Windows' app mode, or stays dark or light, set in Settings.
 - **Shareable reports.** A self-contained HTML file that works on a phone, plus the full JSON and every tool's raw output.
 - **Leaves no trace.** Registry keys and drivers a tool creates are removed when it closes, and Uninstall.exe cleans what is left. Anything that was on the PC before DiagKit is never touched.
 - **Small and fast.** About 4.5 MB, with no runtime to carry and nothing unpacked to `%TEMP%`.
@@ -36,7 +38,7 @@ Download **setup.exe** from the [Releases](https://github.com/CrimsonMac/diagkit
 
 setup.exe is not code-signed, so Windows SmartScreen may warn about it the first time: choose **More info**, then **Run anyway**. Each release lists the SHA-256 of setup.exe, so you can check your download with `Get-FileHash setup.exe`.
 
-1. **Pick the location.** USB sticks are listed as one-click choices; **Change…** picks any folder. Setup creates `diagkit.<version>` inside it. Pick a folder that already holds a kit, or the kit itself, and setup updates that kit instead.
+1. **Pick the location.** USB sticks are listed as one-click choices; **Change…** opens a folder picker that lists every drive with its free space, can make a new folder, marks existing kits and shows where the kit will end up before you confirm. Setup always creates `diagkit.<version>` inside the folder you pick, so picking the top of a drive (`E:\`) gives the kit a folder of its own instead of spreading its files across the stick. Pick a folder that already holds a kit, or the kit itself, and setup updates that kit instead.
 2. **Tick the tools.** All of them are ticked for a new kit, about 110 MB in total. The ones the health check needs can't be unticked. On an existing kit, unticking a tool removes it, and setup remembers that choice next time.
 3. **Install.** Three downloads run at a time. Every file is checked against its publisher's hash or signature before it goes into the kit, and each tool has fallback sources in case a site is down. See [TOOLS.md](TOOLS.md) for the details.
 4. **Open DiagKit or the kit folder** when it finishes. Setup closes once either one opens.
@@ -61,6 +63,7 @@ diagkit.1.1.1\
   Uninstall.exe         cleans this PC and/or removes the kit
   Tools\                one folder per tool, plus tools.json (the tool list, editable)
   Reports\<PC>_<date>\  report.html, report.json, raw\
+  settings.json         DiagKit's settings, written once you change one
   .diagkit              hidden record of what DiagKit installed, for Uninstall.exe
 ```
 
@@ -78,7 +81,13 @@ diagkit.1.1.1\
   If that can't happen yet (DiagKit was closed first, or a driver is still loaded), it is finished at DiagKit's next start or by Uninstall.
 - To add your own tools, edit `Tools\tools.json`; see [TOOLS.md](TOOLS.md#adding-your-own-tools).
 
-**Health** (Ctrl+2, F5 from anywhere) runs these steps:
+**Quick** (Ctrl+2) runs part of the health check when you only want to see one thing:
+- **Quick actions**: Drive health (drive health and free space), Temperatures, CPU load test (30 s or 2 min), Crashes and hardware errors (event logs and crash dumps), Memory, Devices, Battery, Startup programs, and System and Windows.
+- **Custom diagnosis**: tick any of the health-check steps below, optionally add the load test, and run them together.
+
+Both show their progress on the Health page and save a normal report, marked with what it covered ("Quick check: Drive health"); the verdict then speaks only for the parts that were checked. The system overview is always included so the report names the PC, and the load test brings the temperature step along because it reads temperatures through it.
+
+**Health** (Ctrl+3, F5 from anywhere) runs the full check, with these steps:
 
 | Step | Source | Needs |
 |---|---|---|
@@ -99,12 +108,20 @@ Steps in the same phase run in parallel, and each has its own timeout. A hung or
 
 The rules turn the data into findings, each with a severity, a plain explanation, **what to do**, and the evidence behind it. Thresholds are conservative and the wording is hedged where the data can't prove a cause. For example, `WHEA_UNCORRECTABLE_ERROR` dumps always name `ntoskrnl.exe`, so the report says the error came from the hardware rather than blaming the kernel. Clocks dropping on a laptop under load is described as power-limit behaviour unless temperatures are also high.
 
-**Reports** (Ctrl+3) lists saved checks. Each one is a folder containing:
+**Reports** (Ctrl+4) lists saved checks. Each one is a folder containing:
 - `report.html`: one self-contained file with no scripts or external assets, which works on a phone and follows light/dark mode. It's the one to send someone.
 - `report.json`: the full structured data.
 - `raw\`: every tool's original output.
 
 [`Examples/sample-report.html`](Examples/sample-report.html) shows what a report for a troubled PC looks like.
+
+**Settings** (Ctrl+, or the gear at the bottom of the rail):
+- **Theme**: System (default; follows Windows' light or dark app mode, and changes with it), Dark or Light. It switches at once.
+- **Open on**: the page DiagKit starts on.
+- **Open the report in the browser** when a check finishes.
+- **Full health check defaults**: the load test length, the startup scan, and whether the PawnIO driver option starts ticked.
+
+Settings are saved to `settings.json` in the kit, so they travel with the stick and nothing is written to the PC. On a read-only kit they last until DiagKit closes. Uninstall removes the file with the rest of the kit.
 
 ## Removing DiagKit
 
@@ -179,6 +196,7 @@ Also tested with non-elevated test builds:
 - registry cleanup: a created key was removed, an existing key restored, and a control tool without trace rules left its key in place;
 - setup: a new kit, an update, a GUI install with a tool unticked, an upgrade of a kit made by the old build script, and every fallback, by blocking the main hosts in a debug build;
 - Uninstall against a kit with planted traces, which removed exactly the kit's entries and kept the user's files and other programs' records. Prefetch decoding was round-trip tested.
+- on Windows 11 24H2, driven through UI Automation: setup's folder picker (browsing, making a new folder, handing it back to setup); switching the theme from dark to light while DiagKit runs, with the choice saved to `settings.json`; and the Quick page, with the System and Windows quick action and a custom diagnosis of Memory and Devices, both producing scoped reports.
 
 Not yet exercised in a controlled test:
 - the PawnIO silent install and uninstall;
@@ -186,6 +204,8 @@ Not yet exercised in a controlled test:
 - deleting Prefetch and background-activity entries.
 
 These use documented Windows APIs and fail safely: anything that can't be removed is reported and retried later.
+
+Also not yet tried: the System theme following a change of Windows' app mode while DiagKit is open, and the remaining quick actions; only the two above ran, and without elevation. They run the same steps as the full health check.
 
 ## Troubleshooting
 
