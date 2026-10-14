@@ -120,20 +120,25 @@ public sealed class Fetcher
                 }
                 else
                 {
-                    List<string> urls = src.TechPowerUpPage != null
-                        ? await TechPowerUpLinksAsync(src.TechPowerUpPage, src.TechPowerUpId!, 6, ct).ConfigureAwait(false)
-                        : src.Urls;
-                    if (urls.Count == 0)
-                    {
-                        throw new InvalidOperationException("no download link could be obtained");
-                    }
-
                     string file = Path.Combine(stage, src.FileName);
-                    log($"downloading {label} from {Net.Host(urls[0])}");
-                    string used = await SaveVerifiedAsync(urls, file, src.Hash, log, ct).ConfigureAwait(false);
-                    if (used != urls[0])
+                    if (src.TechPowerUpPage != null)
                     {
-                        log("got it from " + Net.Host(used));
+                        await SaveFromTechPowerUpAsync(src.TechPowerUpPage, src.TechPowerUpId!, file, src.Hash, label, log, ct).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        List<string> urls = src.Urls;
+                        if (urls.Count == 0)
+                        {
+                            throw new InvalidOperationException("no download link could be obtained");
+                        }
+
+                        log($"downloading {label} from {Net.Host(urls[0])}");
+                        string used = await SaveVerifiedAsync(urls, file, src.Hash, log, ct).ConfigureAwait(false);
+                        if (used != urls[0])
+                        {
+                            log("got it from " + Net.Host(used));
+                        }
                     }
 
                     if (src.Hash.Length > 0)
@@ -428,36 +433,56 @@ public sealed class Fetcher
 
     /// <summary>
     /// TechPowerUp: posting the file id returns the mirror list (closest first); posting id + server_id answers with a
-    /// redirect to a short-lived link on that mirror. Only the first few mirrors are asked, each with one request.
+    /// redirect to a short-lived link on that mirror. Links are asked for one mirror at a time, right before that
+    /// mirror is tried: asking all of them up front cost one round trip each (and up to 30 s per slow mirror)
+    /// before the download could even start, when the closest mirror nearly always works.
     /// </summary>
-    private static async Task<List<string>> TechPowerUpLinksAsync(string page, string id, int max, CancellationToken ct)
+    private static async Task SaveFromTechPowerUpAsync(string page, string id, string path, string hash, string label, Action<string> log, CancellationToken ct)
     {
+        const int MaxMirrors = 6;
+        log("getting a download link from TechPowerUp");
         string html = await Net.PostFormAsync(page, new Dictionary<string, string> { ["id"] = id }, ct).ConfigureAwait(false);
         List<string> servers = Regex.Matches(html, @"name=""server_id"" value=""(\d+)""").Cast<Match>()
-            .Select(m => m.Groups[1].Value).Distinct().Take(max).ToList();
+            .Select(m => m.Groups[1].Value).Distinct().Take(MaxMirrors).ToList();
         if (servers.Count == 0)
         {
             throw new InvalidDataException("the TechPowerUp download page listed no mirrors");
         }
 
-        var links = new List<string>();
+        var errors = new List<string>();
         foreach (string server in servers)
         {
+            string? link;
             try
             {
-                string? link = await Net.PostForRedirectAsync(page, new Dictionary<string, string> { ["id"] = id, ["server_id"] = server }, ct).ConfigureAwait(false);
-                if (link != null)
-                {
-                    links.Add(link);
-                }
+                link = await Net.PostForRedirectAsync(page, new Dictionary<string, string> { ["id"] = id, ["server_id"] = server }, ct).ConfigureAwait(false);
             }
-            catch (Exception) when (!ct.IsCancellationRequested)
+            catch (Exception ex) when (!ct.IsCancellationRequested)
             {
-                // This mirror did not answer; the next one might.
+                errors.Add($"mirror {server}: {Net.Describe(ex)}");
+                continue;
+            }
+
+            if (link == null)
+            {
+                errors.Add($"mirror {server}: no link");
+                continue;
+            }
+
+            log($"downloading {label} from {Net.Host(link)}");
+            try
+            {
+                await SaveVerifiedAsync(new List<string> { link }, path, hash, log, ct).ConfigureAwait(false);
+                return;
+            }
+            catch (InvalidDataException ex) when (!ct.IsCancellationRequested)
+            {
+                errors.Add(ex.Message);
+                log($"{Net.Host(link)} failed, trying the next mirror");
             }
         }
 
-        return links;
+        throw new InvalidDataException("no TechPowerUp mirror delivered the file. " + string.Join("; ", errors));
     }
 
     // ------------------------------------------------------------------ download and verify
