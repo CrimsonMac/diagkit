@@ -27,6 +27,9 @@
         <DataTemplate DataType="{x:Type vm:HistoryViewModel}">
             <views:HistoryView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
     </Window.Resources>
 
     <Window.InputBindings>
@@ -34,6 +37,7 @@
         <KeyBinding Key="D1" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Tools" />
         <KeyBinding Key="D2" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Health" />
         <KeyBinding Key="D3" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="History" />
+        <KeyBinding Key="OemComma" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
         <KeyBinding Key="F5" Command="{Binding RunCheckCommand}" />
     </Window.InputBindings>
 
@@ -96,6 +100,8 @@
                 </StackPanel>
                 <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionText}" Style="{StaticResource Text.Faint}" HorizontalAlignment="Center"
                            Margin="0,0,0,14" />
+                <RadioButton DockPanel.Dock="Bottom" Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE713;" Content="Settings"
+                             IsChecked="{Binding IsSettingsPage, Mode=TwoWay}" ToolTip="Settings (Ctrl+,)" Margin="0,0,0,4" />
                 <Button DockPanel.Dock="Bottom" Style="{StaticResource Button.Icon}" Content="&#xE74D;" Width="40" Height="36" Margin="0,0,0,6"
                         HorizontalAlignment="Center" Command="{Binding UninstallCommand}" AutomationProperties.Name="Uninstall"
                         Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVis}}"

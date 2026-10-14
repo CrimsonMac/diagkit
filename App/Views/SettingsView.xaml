@@ -1,0 +1,171 @@
+<UserControl x:Class="DiagKit.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:DiagKit.Controls">
+    <UserControl.Resources>
+        <!-- Bordered strip that holds a row of Segment radio buttons. -->
+        <Style x:Key="SegmentStrip" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Bg}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+            <StackPanel Margin="32,26,32,24" MaxWidth="800" HorizontalAlignment="Left">
+                <TextBlock Text="Settings" Style="{StaticResource Text.PageTitle}" />
+                <TextBlock Style="{StaticResource Text.Lede}" Margin="0,8,0,0" Text="{Binding LocationText, Mode=OneTime}" />
+
+                <Border Margin="0,14,0,0" Padding="14,10" CornerRadius="6" Background="{DynamicResource Surface}"
+                        BorderBrush="{DynamicResource Led.Warning}" BorderThickness="1"
+                        Visibility="{Binding SaveFailed, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <ctl:Led State="Warning" Margin="0,0,10,0" VerticalAlignment="Top" />
+                        <TextBlock TextWrapping="Wrap"
+                                   Text="The kit folder is read-only, so these settings only last until DiagKit closes." />
+                    </DockPanel>
+                </Border>
+
+                <!-- Appearance -->
+                <TextBlock Text="Appearance" Style="{StaticResource Text.Section}" Margin="0,26,0,12" />
+                <Border Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,24,0">
+                            <TextBlock Text="Theme" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding ThemeHint}" Style="{StaticResource Text.Muted}" Margin="0,3,0,0" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Style="{StaticResource SegmentStrip}">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" GroupName="SettingsTheme" Content="System"
+                                             IsChecked="{Binding Theme, Converter={StaticResource EqualsParam}, ConverterParameter=System}" />
+                                <RadioButton Style="{StaticResource Segment}" GroupName="SettingsTheme" Content="Dark"
+                                             IsChecked="{Binding Theme, Converter={StaticResource EqualsParam}, ConverterParameter=Dark}" />
+                                <RadioButton Style="{StaticResource Segment}" GroupName="SettingsTheme" Content="Light"
+                                             IsChecked="{Binding Theme, Converter={StaticResource EqualsParam}, ConverterParameter=Light}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Behaviour -->
+                <TextBlock Text="Behaviour" Style="{StaticResource Text.Section}" Margin="0,26,0,12" />
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,24,0">
+                                <TextBlock Text="Open on" FontWeight="SemiBold" />
+                                <TextBlock Text="The page DiagKit shows when it starts." Style="{StaticResource Text.Muted}" Margin="0,3,0,0" />
+                            </StackPanel>
+                            <Border Grid.Column="1" Style="{StaticResource SegmentStrip}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStart" Content="Tools"
+                                                 IsChecked="{Binding StartPage, Converter={StaticResource EqualsParam}, ConverterParameter=Tools}" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStart" Content="Health"
+                                                 IsChecked="{Binding StartPage, Converter={StaticResource EqualsParam}, ConverterParameter=Health}" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStart" Content="Reports"
+                                                 IsChecked="{Binding StartPage, Converter={StaticResource EqualsParam}, ConverterParameter=History}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Border Style="{StaticResource Rule}" Margin="0,18" />
+
+                        <CheckBox IsChecked="{Binding OpenHtmlAfterCheck}">
+                            <StackPanel>
+                                <TextBlock Text="Open the report in the browser when a check finishes" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Text.Muted}" Margin="0,3,0,0"
+                                           Text="Handy for printing or sending it on. The report is shown in DiagKit either way." />
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- Health check defaults -->
+                <TextBlock Text="Full health check" Style="{StaticResource Text.Section}" Margin="0,26,0,4" />
+                <TextBlock Text="What the Health page starts with. You can still change it there before each check."
+                           Style="{StaticResource Text.Muted}" Margin="0,0,0,12" />
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,24,0">
+                                <TextBlock Text="CPU load test" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Text.Muted}" Margin="0,3,0,0"
+                                           Text="Loads every core to catch overheating and throttling. Fans get loud while it runs." />
+                            </StackPanel>
+                            <Border Grid.Column="1" Style="{StaticResource SegmentStrip}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStress" Content="Off"
+                                                 IsChecked="{Binding StressSeconds, Converter={StaticResource EqualsParam}, ConverterParameter=0}" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStress" Content="30 s"
+                                                 IsChecked="{Binding StressSeconds, Converter={StaticResource EqualsParam}, ConverterParameter=30}" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStress" Content="2 min"
+                                                 IsChecked="{Binding StressSeconds, Converter={StaticResource EqualsParam}, ConverterParameter=120}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Border Style="{StaticResource Rule}" Margin="0,18" />
+
+                        <CheckBox IsChecked="{Binding ScanStartup}">
+                            <StackPanel>
+                                <TextBlock Text="Scan startup entries" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Text.Muted}" Margin="0,3,0,0"
+                                           Text="Lists unsigned and broken programs that start with Windows. Adds 20 to 60 seconds." />
+                            </StackPanel>
+                        </CheckBox>
+
+                        <Border Style="{StaticResource Rule}" Margin="0,18" />
+
+                        <CheckBox IsChecked="{Binding OfferPawnIo}">
+                            <StackPanel>
+                                <TextBlock Text="Offer to install the CPU temperature driver" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Text.Muted}" Margin="0,3,0,0"
+                                           Text="When PawnIO is missing and its setup is in the kit, its option starts ticked. Untick this to leave PCs without it unless you ask." />
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <Button Style="{StaticResource Button.Ghost}" HorizontalAlignment="Left" Margin="-10,14,0,0" Command="{Binding ResetCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE777;" FontSize="12" Margin="0,0,8,0" />
+                        <TextBlock Text="Reset to defaults" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- About -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="32,12,32,14">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Faint}">
+                    <Run Text="{Binding VersionText, Mode=OneTime}" FontWeight="SemiBold" />
+                    <Run Text="  ·  " />
+                    <Run Text="{Binding CopyrightText, Mode=OneTime}" />
+                </TextBlock>
+                <TextBlock Text="{Binding LicenseText, Mode=OneTime}" Style="{StaticResource Text.Faint}" FontSize="11.5" Margin="0,2,0,0" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

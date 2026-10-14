@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    mc:Ignorable="po">
+
+    <!-- Light palette: cool grey paper, the same blue accent darkened for contrast. Same keys as Palette.Dark.xaml. -->
+    <SolidColorBrush x:Key="Bg" Color="#F4F6F9" po:Freeze="True" />
+    <SolidColorBrush x:Key="Rail" Color="#E9EDF2" po:Freeze="True" />
+    <SolidColorBrush x:Key="Surface" Color="#FFFFFF" po:Freeze="True" />
+    <SolidColorBrush x:Key="Raised" Color="#EDF0F4" po:Freeze="True" />
+    <SolidColorBrush x:Key="Pressed" Color="#E1E6EC" po:Freeze="True" />
+    <SolidColorBrush x:Key="Line" Color="#DCE1E8" po:Freeze="True" />
+    <SolidColorBrush x:Key="LineStrong" Color="#C5CCD6" po:Freeze="True" />
+    <SolidColorBrush x:Key="HoverTint" Color="#0A000000" po:Freeze="True" />
+    <SolidColorBrush x:Key="Text" Color="#1A1F27" po:Freeze="True" />
+    <SolidColorBrush x:Key="Muted" Color="#566070" po:Freeze="True" />
+    <SolidColorBrush x:Key="Faint" Color="#7A8391" po:Freeze="True" />
+    <SolidColorBrush x:Key="Accent" Color="#1F6FEB" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentHover" Color="#3480F0" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentPressed" Color="#1A5FCC" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentSoft" Color="#1F1F6FEB" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentLine" Color="#801F6FEB" po:Freeze="True" />
+    <SolidColorBrush x:Key="OnAccent" Color="#FFFFFF" po:Freeze="True" />
+    <SolidColorBrush x:Key="CloseHover" Color="#C42B1C" po:Freeze="True" />
+    <SolidColorBrush x:Key="WarnSoft" Color="#29E09A00" po:Freeze="True" />
+    <SolidColorBrush x:Key="OkSoft" Color="#2216A34A" po:Freeze="True" />
+
+    <!-- LED colours, darker than in the dark palette so they also read as text on white. -->
+    <SolidColorBrush x:Key="Led.Ok" Color="#16A34A" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Info" Color="#4A78B5" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Warning" Color="#B87400" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Critical" Color="#D92D2D" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Busy" Color="#2563EB" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Off" Color="#C3CAD3" po:Freeze="True" />
+
+</ResourceDictionary>

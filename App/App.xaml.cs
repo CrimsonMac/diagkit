@@ -22,12 +22,22 @@ public partial class App : Application
         };
         // Fatal AppDomain exceptions are logged and shown by Program.Main.
 
+        // The palette is in place before the first window loads, so it never flashes the wrong theme.
+        AppSettings settings = AppSettings.Load();
+        ThemeManager.Apply(settings.Theme);
+
         var window = new MainWindow();
-        var vm = new MainViewModel(IconLoader.Load, window.Confirm);
+        var vm = new MainViewModel(IconLoader.Load, window.Confirm, settings);
         window.DataContext = vm;
         vm.CloseRequested += window.Close;
         MainWindow = window;
         window.Show();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        ThemeManager.Shutdown();
+        base.OnExit(e);
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

@@ -27,6 +27,7 @@ public sealed class HealthViewModel : ObservableObject
     private readonly ToolsViewModel _tools;
     private readonly Action<string, LedState> _notify;
     private readonly Action _reportsChanged;
+    private readonly AppSettings _settings;
     private HealthMode _mode = HealthMode.Setup;
     private ReportViewModel? _report;
     private int _stressSeconds;
@@ -39,11 +40,13 @@ public sealed class HealthViewModel : ObservableObject
     private CancellationTokenSource? _cts;
     private CollectorStatus? _stressStatus;
 
-    public HealthViewModel(ToolsViewModel tools, Action<string, LedState> notify, Action reportsChanged)
+    public HealthViewModel(ToolsViewModel tools, Action<string, LedState> notify, Action reportsChanged, AppSettings settings)
     {
         _tools = tools;
         _notify = notify;
         _reportsChanged = reportsChanged;
+        _settings = settings;
+        ApplyDefaults();
         IsElevated = SystemProbe.IsElevated();
         RunCommand = new AsyncCommand(RunAsync, () => Mode != HealthMode.Running);
         CancelCommand = new RelayCommand(() => _cts?.Cancel(), () => Mode == HealthMode.Running);
@@ -223,6 +226,19 @@ public sealed class HealthViewModel : ObservableObject
         };
     }
 
+    /// <summary>Resets the check's options to the defaults from Settings (at start, and whenever they change).</summary>
+    public void ApplyDefaults()
+    {
+        if (IsRunning)
+        {
+            return;
+        }
+
+        SetStress(_settings.StressSeconds);
+        IncludeStartup = _settings.ScanStartup;
+        InstallPawnIo = _settings.OfferPawnIo;
+    }
+
     public void ShowReport(ReportViewModel report)
     {
         Report = report;
@@ -268,6 +284,11 @@ public sealed class HealthViewModel : ObservableObject
         {
             ReportRunResult result = await Task.Run(() => ReportRunner.RunAsync(plan, options, paths, defs, _cts.Token));
             ShowReport(new ReportViewModel(result.Report, result.Folder, result.HtmlPath, _notify));
+            if (_settings.OpenHtmlAfterCheck && result.HtmlPath != null && !ShellOpen.Open(result.HtmlPath, out string? openError))
+            {
+                _notify("Could not open the HTML report: " + openError, LedState.Warning);
+            }
+
             if (result.SaveError != null)
             {
                 _notify("The report could not be saved: " + result.SaveError, LedState.Warning);

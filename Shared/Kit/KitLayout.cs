@@ -12,6 +12,7 @@ namespace DiagKit.Kit;
 ///   Uninstall.exe      removes DiagKit from this PC and/or deletes the kit
 ///   Tools\             one folder per tool, plus tools.json
 ///   Reports\           saved health checks
+///   settings.json      DiagKit's settings (written once something is changed)
 ///   .diagkit           hidden ledger (see KitLedger)
 /// </code>
 /// </summary>
@@ -23,6 +24,7 @@ public static class KitLayout
     public const string ReportsFolder = "Reports";
     public const string ToolList = "tools.json";
     public const string ErrorLog = "diagkit-error.log";
+    public const string SettingsFile = "settings.json";
 
     /// <summary>Per-tool stamp file written by fetch-tools.ps1 before 1.1; marks a folder DiagKit downloaded.</summary>
     public const string LegacyStamp = ".diagkit-source";

@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using DiagKit.Interop;
+using DiagKit.Services;
 using DiagKit.ViewModels;
 
 namespace DiagKit;
@@ -26,10 +27,18 @@ public partial class MainWindow : Window
 
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
+        ApplyFrame();
+        ThemeManager.Changed += ApplyFrame;
+        Closed += (_, _) => ThemeManager.Changed -= ApplyFrame;
+    }
+
+    /// <summary>Matches the parts of the frame Windows draws (dark mode hint, border) to the current palette.</summary>
+    private void ApplyFrame()
+    {
         try
         {
             IntPtr hwnd = new WindowInteropHelper(this).Handle;
-            int dark = 1;
+            int dark = ThemeManager.IsDark ? 1 : 0;
             NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
             int round = NativeMethods.DWMWCP_ROUND;
             NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));

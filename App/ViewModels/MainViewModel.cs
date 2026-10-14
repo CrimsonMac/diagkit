@@ -12,6 +12,7 @@ public enum AppPage
     Tools,
     Health,
     History,
+    Settings,
 }
 
 public sealed class MainViewModel : ObservableObject
@@ -24,12 +25,14 @@ public sealed class MainViewModel : ObservableObject
     private int _noticeVersion;
     private readonly Func<string, bool> _confirm;
 
-    public MainViewModel(Func<string, object?> iconLoader, Func<string, bool> confirm)
+    public MainViewModel(Func<string, object?> iconLoader, Func<string, bool> confirm, AppSettings settings)
     {
         _confirm = confirm;
         Tools = new ToolsViewModel(iconLoader, ShowNotice);
         History = new HistoryViewModel(OpenReport, ShowNotice, confirm);
-        Health = new HealthViewModel(Tools, ShowNotice, () => _ = History.LoadAsync());
+        Health = new HealthViewModel(Tools, ShowNotice, () => _ = History.LoadAsync(), settings);
+        Settings = new SettingsViewModel(settings);
+        Settings.Changed += Health.ApplyDefaults;
         _currentPage = Tools;
         IsElevated = SystemProbe.IsElevated();
 
@@ -60,6 +63,7 @@ public sealed class MainViewModel : ObservableObject
     public ToolsViewModel Tools { get; }
     public HealthViewModel Health { get; }
     public HistoryViewModel History { get; }
+    public SettingsViewModel Settings { get; }
     public ICommand NavigateCommand { get; }
     public ICommand DismissNoticeCommand { get; }
     public ICommand FindCommand { get; }
@@ -89,11 +93,13 @@ public sealed class MainViewModel : ObservableObject
             {
                 AppPage.Health => Health,
                 AppPage.History => History,
+                AppPage.Settings => Settings,
                 _ => Tools,
             };
             OnPropertyChanged(nameof(IsToolsPage));
             OnPropertyChanged(nameof(IsHealthPage));
             OnPropertyChanged(nameof(IsHistoryPage));
+            OnPropertyChanged(nameof(IsSettingsPage));
 
             if (value == AppPage.Health && Health.IsSetup)
             {
@@ -143,6 +149,18 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    public bool IsSettingsPage
+    {
+        get => _page == AppPage.Settings;
+        set
+        {
+            if (value)
+            {
+                Page = AppPage.Settings;
+            }
+        }
+    }
+
     public object CurrentPage
     {
         get => _currentPage;
@@ -173,7 +191,10 @@ public sealed class MainViewModel : ObservableObject
 
     public async Task StartAsync()
     {
-        await Tools.LoadAsync();
+        // Started first: the Health page waits on the tool scan when it is the start page.
+        Task load = Tools.LoadAsync();
+        Page = Settings.StartPage;
+        await load;
         _ = LeftoverCleanup.RunAsync();
     }
 

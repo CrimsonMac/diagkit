@@ -19,6 +19,7 @@
     <!-- ============================================================ Converters -->
     <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
     <conv:NotEmptyToVisibilityConverter x:Key="NotEmptyToVis" />
+    <conv:EqualsParameterConverter x:Key="EqualsParam" />
 
     <!-- ============================================================ Type -->
     <FontFamily x:Key="Font.Display">Segoe UI Variable Display, Segoe UI</FontFamily>

@@ -107,6 +107,7 @@ public sealed class Remover
             KitLayout.AppExe,
             KitLayout.UninstallExe,
             KitLayout.ErrorLog,
+            KitLayout.SettingsFile,
             KitLayout.ToolList, // kits made before 1.1 kept it in the root
             KitLedger.FileName,
             KitLedger.FileName + ".tmp",

@@ -37,3 +37,23 @@ public sealed class NotEmptyToVisibilityConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => DependencyProperty.UnsetValue;
 }
+
+/// <summary>
+/// For radio buttons bound to one enum or number: checked when the value equals ConverterParameter, and checking it
+/// sets the value to the parameter. Saves a bool property per choice.
+/// </summary>
+public sealed class EqualsParameterConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => string.Equals(value?.ToString(), parameter as string, StringComparison.OrdinalIgnoreCase);
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not true || parameter is not string p)
+        {
+            return Binding.DoNothing;
+        }
+
+        return targetType.IsEnum ? Enum.Parse(targetType, p, ignoreCase: true) : System.Convert.ChangeType(p, targetType, CultureInfo.InvariantCulture);
+    }
+}
