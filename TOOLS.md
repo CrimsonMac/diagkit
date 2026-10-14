@@ -36,7 +36,7 @@ Each tool has more than one source, tried in order, so one site being down does 
 |---|---|---|
 | CPU-Z, WizTree, Everything | Scoop Extras manifest, then the Wayback Machine's copy of the same file | SHA-256 from the manifest |
 | HWiNFO64 | Scoop Extras manifest (sac.sk), Wayback copy, then the newest portable zip on SourceForge | SHA-256, or the REALiX signature for SourceForge |
-| GPU-Z | TechPowerUp's download page (up to six of its mirrors), then the Scoop manifest | SHA-256 from TechPowerUp's page and the TechPowerUp LLC signature |
+| GPU-Z | TechPowerUp's download page (its mirrors, closest first, one at a time until one works), then the Scoop manifest | SHA-256 from TechPowerUp's page and the TechPowerUp LLC signature |
 | CrystalDiskInfo, CrystalDiskMark | Scoop Extras manifest via SourceForge, then SourceForge's master host | SHA-1 from the manifest |
 | Prime95 | Scoop Extras manifest (mersenne.ca), mersenne.org's copy, Wayback copy | SHA-256 from the manifest |
 | smartctl | Scoop Main manifest via SourceForge, then the smartmontools GitHub release; `smartctl.exe` is taken out of the installer with 7-Zip | SHA-1 from the manifest |

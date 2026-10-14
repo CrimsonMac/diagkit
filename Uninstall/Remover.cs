@@ -43,7 +43,10 @@ public sealed class Remover
     public DateTime PawnIoInstallDate => Ledger.TracesOnThisPc().Where(t => t.Kind == TraceKinds.PawnIo).Select(t => t.Date).DefaultIfEmpty().Max();
 
     /// <summary>Registry keys, driver services and files a tool left on this PC that are still waiting to be removed.</summary>
-    public List<PcTrace> PendingTraces => Ledger.TracesOnThisPc().Where(t => t.Kind != TraceKinds.PawnIo).ToList();
+    public List<PcTrace> PendingTraces => Ledger.TracesOnThisPc().Where(t => t.Kind is not (TraceKinds.PawnIo or TraceKinds.Shortcut)).ToList();
+
+    /// <summary>The Start menu shortcut setup made for this kit on this PC, if any.</summary>
+    public string? StartMenuShortcut => StartMenu.Existing(KitDir);
 
     /// <summary>Other PCs where DiagKit installed PawnIO or left something; cleaning them needs Uninstall run there.</summary>
     public List<string> OtherPcsWithTraces => Ledger.Traces
@@ -194,7 +197,10 @@ public sealed class Remover
         List<PcTrace> failed = TraceCleaner.CleanPending(KitDir, includePawnIo: options.RemovePawnIo, log: _log);
         problems += failed.Count;
 
-        // 2. Windows' records of programs run from the kit.
+        // 2. The Start menu shortcut, if setup was asked to make one.
+        problems += StartMenu.Remove(KitDir, _log) ? 0 : 1;
+
+        // 3. Windows' records of programs run from the kit.
         var scrubber = new WindowsTraces(KitFolderNames(), KitProgramNames(), _log);
         int records = scrubber.ScrubAll();
         if (records == 0)
@@ -202,7 +208,7 @@ public sealed class Remover
             _log("Windows had no records of programs run from the kit");
         }
 
-        // 3. DiagKit's own leftovers in this PC's temp folder (and the runtime copy older DiagKit versions extracted).
+        // 4. DiagKit's own leftovers in this PC's temp folder (and the runtime copy older DiagKit versions extracted).
         string temp = Path.GetTempPath();
         DeleteFile(Path.Combine(temp, KitLayout.ErrorLog));
         DeleteDir(Path.Combine(temp, ".net", "DiagKit"), "the runtime files an older DiagKit unpacked");

@@ -276,6 +276,9 @@ public static class TraceKinds
 
     /// <summary>A file a tool left outside the kit (in %TEMP%, for example).</summary>
     public const string File = "file";
+
+    /// <summary>The Start menu shortcut setup made on request (see StartMenu). Only Uninstall removes it.</summary>
+    public const string Shortcut = "shortcut";
 }
 
 /// <summary>Identifies the current PC across runs, so a kit used on many PCs keeps their traces apart.</summary>

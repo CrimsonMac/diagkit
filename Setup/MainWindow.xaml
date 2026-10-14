@@ -119,7 +119,14 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <CheckBox Content="Download every tool again, even when it is up to date" IsChecked="{Binding Redownload, Mode=TwoWay}" Margin="0,14,0,4" />
+                <CheckBox IsChecked="{Binding AddToStartMenu, Mode=TwoWay}" Margin="0,14,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Add DiagKit to the Start menu on this PC" />
+                        <TextBlock Style="{StaticResource Text.Faint}" Margin="0,2,0,0"
+                                   Text="So searching for DiagKit in Windows finds it. Best for a kit that stays on this PC; Uninstall removes the shortcut." />
+                    </StackPanel>
+                </CheckBox>
+                <CheckBox Content="Download every tool again, even when it is up to date" IsChecked="{Binding Redownload, Mode=TwoWay}" Margin="0,10,0,4" />
             </StackPanel>
         </ScrollViewer>
 

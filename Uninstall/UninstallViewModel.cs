@@ -188,6 +188,11 @@ public sealed class UninstallViewModel : ObservableObject
                        string.Join(", ", pending.Select(p => p.Value).Take(4)) + (pending.Count > 4 ? ", …" : ""));
         }
 
+        if (_remover.StartMenuShortcut != null)
+        {
+            remove.Add("The DiagKit shortcut in the Start menu");
+        }
+
         if (ShowPawnIoOption && RemovePawnIo)
         {
             remove.Add("The PawnIO driver");

@@ -45,7 +45,7 @@ setup.exe is not code-signed, so Windows SmartScreen may warn about it the first
 
 Run setup again whenever you like: it only downloads tools that have a new release. Updating a kit renames the folder to the new version. Tools you added to the kit yourself, and your reports, are kept.
 
-Setup leaves nothing on the PC it runs on.
+Setup leaves nothing on the PC it runs on, unless you tick **Add DiagKit to the Start menu on this PC**. Windows Search only looks in indexed places such as your user folders and the Start menu, so a kit on another drive or a USB stick doesn't show up when you search for DiagKit; the shortcut fixes that. It is ticked by default for a kit on a fixed drive and unticked for a USB stick. Setup records the shortcut in the kit, keeps it pointing at the kit when an update renames the folder, and removes it if you untick the option later. Uninstall removes it too.
 
 ```
 setup.exe [/target <folder>] [/tools name,name] [/force] [/quiet]
@@ -132,6 +132,7 @@ Settings are saved to `settings.json` in the kit, so they travel with the stick 
 
 Cleaning a PC removes only what DiagKit put there:
 - Registry keys, driver services and temp files a tool left behind.
+- The Start menu shortcut, if setup made one on this PC (and it still points at DiagKit).
 - The PawnIO driver, but only on a PC where DiagKit's health check installed it. It is optional, and listed with the date it was installed.
 - Windows' records of programs that ran from the kit folder: Prefetch, Explorer's launch history and program-name cache, compatibility records, background-activity entries, taskbar/jump-list data and Recent Items. These are matched on the kit's path, under its current or former names and any drive letter, so the same tool run from anywhere else keeps its records.
 - The runtime files older DiagKit versions unpacked to `%TEMP%`, and reports DiagKit saved on this PC when the kit was read-only (optional).

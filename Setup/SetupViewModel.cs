@@ -95,6 +95,7 @@ public sealed class SetupViewModel : ObservableObject
     private List<ToolRowViewModel> _rows = new();
     private List<ToolGroupRows> _groups = new();
     private bool _redownload;
+    private bool _addToStartMenu;
     private string _resultTitle = "";
     private string _resultText = "";
     private LedState _resultLed = LedState.Ok;
@@ -183,7 +184,17 @@ public sealed class SetupViewModel : ObservableObject
             OnPropertyChanged(nameof(KitDir));
             OnPropertyChanged(nameof(TargetText));
             OnSelectionChanged();
+
+            // On for a kit this PC already has a shortcut for, or one on a fixed drive (kept on this PC); off for a
+            // USB stick, which travels and changes drive letters.
+            AddToStartMenu = (_target.Existing && StartMenu.IsRecorded(_target.KitDir)) || !Locations.IsRemovable(_target.KitDir);
         }
+    }
+
+    public bool AddToStartMenu
+    {
+        get => _addToStartMenu;
+        set => SetProperty(ref _addToStartMenu, value);
     }
 
     public string KitDir => _target.KitDir;
@@ -311,6 +322,15 @@ public sealed class SetupViewModel : ObservableObject
             foreach (string note in s.Notes)
             {
                 OnLog(note);
+            }
+
+            if (AddToStartMenu)
+            {
+                OnLog(StartMenu.Add(s.KitDir));
+            }
+            else
+            {
+                StartMenu.Remove(s.KitDir, OnLog);
             }
 
             if (s.Failed == 0)

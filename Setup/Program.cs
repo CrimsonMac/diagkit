@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
+using DiagKit.Kit;
 using DiagKit.ViewModels;
 
 namespace DiagKit.Setup;
@@ -80,6 +81,12 @@ public static class Program
                 Write(note);
             }
 
+            // A quiet run never adds a shortcut, but keeps an existing one pointing at the (possibly renamed) kit.
+            if (StartMenu.IsRecorded(s.KitDir))
+            {
+                Write(StartMenu.Add(s.KitDir));
+            }
+
             Write(s.Failed == 0 ? $"Kit ready: {s.KitDir}" : $"{s.Failed} tools failed; DiagKit works without them. Run setup again later.");
             return s.Failed == 0 ? 0 : 1;
         }
@@ -131,7 +138,7 @@ public static class Locations
         }
     }
 
-    private static bool IsRemovable(string path)
+    public static bool IsRemovable(string path)
     {
         try
         {
