@@ -25,8 +25,10 @@ public static class ReportFacts
     public static Severity Worst(DiagnosticReport r)
     {
         Severity worst = r.Findings.Count == 0 ? Severity.Ok : r.Findings.Max(f => f.Severity);
-        // A clean result with failed steps is incomplete, not healthy.
-        return worst <= Severity.Info && (FailedSteps(r) > 0 || r.Findings.Count == 0) ? Severity.Info : worst;
+        // A clean result with failed steps is incomplete, not healthy. A partial check that ran cleanly and found
+        // nothing (a desktop's battery check) is simply clean.
+        bool empty = r.Findings.Count == 0 && r.Scope == null;
+        return worst <= Severity.Info && (FailedSteps(r) > 0 || empty) ? Severity.Info : worst;
     }
 
     public static string Verdict(DiagnosticReport r)
@@ -43,12 +45,12 @@ public static class ReportFacts
             return warn == 1 ? "1 thing is worth fixing" : $"{warn} things are worth fixing";
         }
 
-        if (r.Findings.Count == 0)
+        int failed = FailedSteps(r);
+        if (r.Findings.Count == 0 && (r.Scope == null || failed > 0))
         {
             return "No results";
         }
 
-        int failed = FailedSteps(r);
         if (failed > 0)
         {
             return failed == 1 ? "Nothing found, but 1 step failed" : $"Nothing found, but {failed} steps failed";
@@ -73,9 +75,16 @@ public static class ReportFacts
             return "Nothing urgent, but these affect stability or performance.";
         }
 
-        if (r.Findings.Count == 0 || FailedSteps(r) > 0)
+        if (FailedSteps(r) > 0 || (r.Findings.Count == 0 && r.Scope == null))
         {
             return "Some checks could not run, so this result is incomplete. See how the check ran, at the bottom.";
+        }
+
+        if (r.Scope != null)
+        {
+            return r.Findings.Count == 0
+                ? "The parts you checked had nothing to report. Run the full health check for the whole picture."
+                : "Nothing to fix in the parts you checked. Run the full health check for the whole picture.";
         }
 
         return "Drives, crash history, hardware errors and temperatures all look normal.";

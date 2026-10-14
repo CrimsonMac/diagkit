@@ -18,6 +18,7 @@ public sealed class ReportListing
     public int Warning { get; init; }
     public int Info { get; init; }
     public string? HtmlPath { get; init; }
+    public string? Scope { get; init; }
 }
 
 public static class ReportStore
@@ -116,6 +117,7 @@ public static class ReportStore
                     Warning = r.Findings.Count(f => f.Severity == Severity.Warning),
                     Info = r.Findings.Count(f => f.Severity == Severity.Info),
                     HtmlPath = File.Exists(html) ? html : null,
+                    Scope = r.Scope,
                 });
             }
             catch (Exception ex)
@@ -132,6 +134,7 @@ public static class ReportStore
     {
         public string MachineName { get; set; } = "";
         public DateTime CreatedAt { get; set; }
+        public string? Scope { get; set; }
         public List<FindingHeader> Findings { get; set; } = new();
     }
 

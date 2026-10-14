@@ -51,7 +51,7 @@ public static class HtmlReportWriter
         }
 
         sb.Append("</ul>\n");
-        sb.Append("<p class=\"stamp\">Checked ").Append(H(TextUtil.DateTimeShort(r.CreatedAt)))
+        sb.Append("<p class=\"stamp\">").Append(r.Scope != null ? H(r.Scope) + ". " : "").Append("Checked ").Append(H(TextUtil.DateTimeShort(r.CreatedAt)))
             .Append(" in ").Append(r.DurationSeconds.ToString("0")).Append(" s with DiagKit ").Append(H(r.AppVersion)).Append("</p>\n");
         sb.Append("</div>\n</header>\n<main class=\"wrap\">\n");
 
@@ -86,7 +86,9 @@ public static class HtmlReportWriter
 
         if (r.Findings.Count == 0)
         {
-            sb.Append("<p class=\"empty\">No findings were produced. See the collection log at the bottom.</p>\n");
+            sb.Append("<p class=\"empty\">").Append(r.Scope != null && ReportFacts.FailedSteps(r) == 0
+                ? "The parts that were checked had nothing to report."
+                : "No findings were produced. See the collection log at the bottom.").Append("</p>\n");
         }
 
         sb.Append("</section>\n");

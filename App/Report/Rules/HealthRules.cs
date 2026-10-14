@@ -287,7 +287,8 @@ public static class HealthRules
             DiskInfo? disk = r.Disks.FirstOrDefault(d => d.Number == n);
             if (disk == null)
             {
-                return $" on disk {n} (not connected now)";
+                // With no drive list at all (a check without Drive health) there is no telling whether it is connected.
+                return r.Disks.Count == 0 ? $" on disk {n}" : $" on disk {n} (not connected now)";
             }
 
             anyUsb |= disk.BusType == "USB";

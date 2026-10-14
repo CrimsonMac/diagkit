@@ -89,6 +89,15 @@ public sealed class ReportOptions
 
     /// <summary>Install the PawnIO driver first (only set when it is missing and its setup is in the kit).</summary>
     public bool InstallPawnIo { get; set; }
+
+    /// <summary>
+    /// The checks to run besides the system overview; null runs the full check. The load test and the startup scan
+    /// still follow <see cref="StressTest"/> and <see cref="StartupScan"/>.
+    /// </summary>
+    public HashSet<CheckId>? Only { get; set; }
+
+    /// <summary>What a partial check covered, in words ("Quick check: Drive health"); null for a full check.</summary>
+    public string? Scope { get; set; }
 }
 
 /// <summary>Shared state for one health-check run.</summary>

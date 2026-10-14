@@ -70,7 +70,8 @@ public sealed class ReportViewModel : ObservableObject
         VerdictDetail = ReportFacts.VerdictDetail(report);
         VerdictLed = LedMap.From(ReportFacts.Worst(report));
         MachineLine = $"{report.MachineName}   {ReportFacts.MachineTitle(report)}";
-        StampText = $"Checked {TextUtil.DateTimeShort(report.CreatedAt)} in {report.DurationSeconds:0} s" +
+        StampText = (report.Scope != null ? report.Scope + ". " : "") +
+                    $"Checked {TextUtil.DateTimeShort(report.CreatedAt)} in {report.DurationSeconds:0} s" +
                     (fromHistory ? $" ({TextUtil.Ago(report.CreatedAt)})" : "");
 
         Tally = new List<TallyItem>
@@ -129,6 +130,10 @@ public sealed class ReportViewModel : ObservableObject
     public bool HasDrives => Drives.Count > 0;
     public bool HasReadings => Readings.Count > 0;
     public bool HasFindings => Findings.Count > 0;
+
+    public string EmptyText => Report.Scope != null && ReportFacts.FailedSteps(Report) == 0
+        ? "The parts that were checked had nothing to report."
+        : "No findings were produced. See how the check ran, below.";
     public ICommand OpenHtmlCommand { get; }
     public ICommand OpenFolderCommand { get; }
     public ICommand ExpandAllCommand { get; }

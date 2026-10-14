@@ -10,6 +10,7 @@ namespace DiagKit.ViewModels;
 public enum AppPage
 {
     Tools,
+    Quick,
     Health,
     History,
     Settings,
@@ -31,8 +32,10 @@ public sealed class MainViewModel : ObservableObject
         Tools = new ToolsViewModel(iconLoader, ShowNotice);
         History = new HistoryViewModel(OpenReport, ShowNotice, confirm);
         Health = new HealthViewModel(Tools, ShowNotice, () => _ = History.LoadAsync(), settings);
+        Quick = new QuickViewModel(Health, () => Page = AppPage.Health, settings);
         Settings = new SettingsViewModel(settings);
         Settings.Changed += Health.ApplyDefaults;
+        Settings.Changed += Quick.ApplyDefaults;
         _currentPage = Tools;
         IsElevated = SystemProbe.IsElevated();
 
@@ -61,6 +64,7 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public ToolsViewModel Tools { get; }
+    public QuickViewModel Quick { get; }
     public HealthViewModel Health { get; }
     public HistoryViewModel History { get; }
     public SettingsViewModel Settings { get; }
@@ -91,17 +95,19 @@ public sealed class MainViewModel : ObservableObject
 
             CurrentPage = value switch
             {
+                AppPage.Quick => Quick,
                 AppPage.Health => Health,
                 AppPage.History => History,
                 AppPage.Settings => Settings,
                 _ => Tools,
             };
             OnPropertyChanged(nameof(IsToolsPage));
+            OnPropertyChanged(nameof(IsQuickPage));
             OnPropertyChanged(nameof(IsHealthPage));
             OnPropertyChanged(nameof(IsHistoryPage));
             OnPropertyChanged(nameof(IsSettingsPage));
 
-            if (value == AppPage.Health && Health.IsSetup)
+            if ((value == AppPage.Health && Health.IsSetup) || value == AppPage.Quick)
             {
                 _ = Health.RefreshComponentsAsync();
             }
@@ -121,6 +127,18 @@ public sealed class MainViewModel : ObservableObject
             if (value)
             {
                 Page = AppPage.Tools;
+            }
+        }
+    }
+
+    public bool IsQuickPage
+    {
+        get => _page == AppPage.Quick;
+        set
+        {
+            if (value)
+            {
+                Page = AppPage.Quick;
             }
         }
     }

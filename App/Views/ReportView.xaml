@@ -120,7 +120,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock Text="No findings were produced. See how the check ran, below." Style="{StaticResource Text.Muted}"
+            <TextBlock Text="{Binding EmptyText}" Style="{StaticResource Text.Muted}"
                        Visibility="{Binding HasFindings, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
 
             <!-- Readings -->

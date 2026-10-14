@@ -36,18 +36,49 @@ public static class ReportRunner
     /// <summary>Builds the step list. Call on the UI thread so the statuses can be bound directly.</summary>
     public static List<PlannedStep> Plan(ReportOptions options)
     {
-        var collectors = new List<ICollector>
+        bool Want(CheckId id) => options.Only == null || options.Only.Contains(id);
+
+        var collectors = new List<ICollector> { new SystemCollector() };
+        // The load test reads temperatures through the sensor step's hardware monitor, so it brings that step along.
+        if (Want(CheckId.Sensors) || options.StressTest)
         {
-            new SystemCollector(),
-            new SensorCollector(),
-            new MemoryCollector(),
-            new VolumeCollector(),
-            new StorageCollector(),
-            new EventLogCollector(),
-            new CrashDumpCollector(),
-            new DeviceCollector(),
-            new BatteryCollector(),
-        };
+            collectors.Add(new SensorCollector());
+        }
+
+        if (Want(CheckId.Memory))
+        {
+            collectors.Add(new MemoryCollector());
+        }
+
+        if (Want(CheckId.Volumes))
+        {
+            collectors.Add(new VolumeCollector());
+        }
+
+        if (Want(CheckId.Storage))
+        {
+            collectors.Add(new StorageCollector());
+        }
+
+        if (Want(CheckId.Events))
+        {
+            collectors.Add(new EventLogCollector());
+        }
+
+        if (Want(CheckId.CrashDumps))
+        {
+            collectors.Add(new CrashDumpCollector());
+        }
+
+        if (Want(CheckId.Devices))
+        {
+            collectors.Add(new DeviceCollector());
+        }
+
+        if (Want(CheckId.Battery))
+        {
+            collectors.Add(new BatteryCollector());
+        }
 
         if (options.InstallPawnIo)
         {
@@ -81,6 +112,7 @@ public static class ReportRunner
             CreatedAt = started,
             MachineName = Environment.MachineName,
             AppVersion = AppInfo.Version,
+            Scope = options.Scope,
         };
 
         string folder = ReportStore.CreateFolder(report.MachineName, started);

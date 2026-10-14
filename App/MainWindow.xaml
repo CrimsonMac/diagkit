@@ -21,6 +21,9 @@
         <DataTemplate DataType="{x:Type vm:ToolsViewModel}">
             <views:ToolsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QuickViewModel}">
+            <views:QuickView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:HealthViewModel}">
             <views:HealthView />
         </DataTemplate>
@@ -35,8 +38,9 @@
     <Window.InputBindings>
         <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FindCommand}" />
         <KeyBinding Key="D1" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Tools" />
-        <KeyBinding Key="D2" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Health" />
-        <KeyBinding Key="D3" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="History" />
+        <KeyBinding Key="D2" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Quick" />
+        <KeyBinding Key="D3" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Health" />
+        <KeyBinding Key="D4" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="History" />
         <KeyBinding Key="OemComma" Modifiers="Ctrl" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
         <KeyBinding Key="F5" Command="{Binding RunCheckCommand}" />
     </Window.InputBindings>
@@ -93,10 +97,12 @@
                 <StackPanel DockPanel.Dock="Top" Margin="0,6,0,0">
                     <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE90F;" Content="Tools"
                                  IsChecked="{Binding IsToolsPage, Mode=TwoWay}" ToolTip="Tools (Ctrl+1)" />
+                    <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE945;" Content="Quick"
+                                 IsChecked="{Binding IsQuickPage, Mode=TwoWay}" ToolTip="Quick actions and custom diagnosis (Ctrl+2)" />
                     <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE95E;" Content="Health"
-                                 IsChecked="{Binding IsHealthPage, Mode=TwoWay}" ToolTip="Health check (Ctrl+2, F5 runs one)" />
+                                 IsChecked="{Binding IsHealthPage, Mode=TwoWay}" ToolTip="Full health check (Ctrl+3, F5 runs one)" />
                     <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE81C;" Content="Reports"
-                                 IsChecked="{Binding IsHistoryPage, Mode=TwoWay}" ToolTip="Saved reports (Ctrl+3)" />
+                                 IsChecked="{Binding IsHistoryPage, Mode=TwoWay}" ToolTip="Saved reports (Ctrl+4)" />
                 </StackPanel>
                 <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionText}" Style="{StaticResource Text.Faint}" HorizontalAlignment="Center"
                            Margin="0,0,0,14" />

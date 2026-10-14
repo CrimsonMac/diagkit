@@ -30,7 +30,9 @@ public sealed class ReportListingViewModel
         : Listing.Warning > 0 ? LedState.Warning
         : LedState.Ok;
 
-    public string Summary => Listing.Critical > 0
+    public string Summary => (Listing.Scope != null ? Listing.Scope + " · " : "") + Verdict;
+
+    private string Verdict => Listing.Critical > 0
         ? $"{TextUtil.Plural(Listing.Critical, "critical problem")}" + (Listing.Warning > 0 ? $", {Listing.Warning} worth fixing" : "")
         : Listing.Warning > 0
             ? $"{Listing.Warning} worth fixing"

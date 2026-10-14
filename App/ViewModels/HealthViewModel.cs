@@ -22,6 +22,23 @@ public enum HealthMode
 
 public sealed record ComponentItem(LedState Led, string Name, string Text);
 
+/// <summary>What to run: the full check, or the parts picked on the Quick actions page.</summary>
+public sealed class CheckRequest
+{
+    /// <summary>Checks to run besides the system overview; null for the full check.</summary>
+    public HashSet<CheckId>? Only { get; init; }
+
+    public int StressSeconds { get; init; }
+    public bool StartupScan { get; init; }
+    public bool InstallPawnIo { get; init; }
+
+    /// <summary>Shown on the report and in the Reports list ("Quick check: Drive health").</summary>
+    public string? Scope { get; init; }
+
+    /// <summary>Heading while it runs; "Checking &lt;PC&gt;" when null.</summary>
+    public string? Title { get; init; }
+}
+
 public sealed class HealthViewModel : ObservableObject
 {
     private readonly ToolsViewModel _tools;
@@ -48,7 +65,12 @@ public sealed class HealthViewModel : ObservableObject
         _settings = settings;
         ApplyDefaults();
         IsElevated = SystemProbe.IsElevated();
-        RunCommand = new AsyncCommand(RunAsync, () => Mode != HealthMode.Running);
+        RunCommand = new AsyncCommand(() => RunAsync(new CheckRequest
+        {
+            StressSeconds = _stressSeconds,
+            StartupScan = _includeStartup,
+            InstallPawnIo = _installPawnIo,
+        }), () => Mode != HealthMode.Running);
         CancelCommand = new RelayCommand(() => _cts?.Cancel(), () => Mode == HealthMode.Running);
         ShowLastReportCommand = new RelayCommand(() =>
         {
@@ -246,17 +268,25 @@ public sealed class HealthViewModel : ObservableObject
         Mode = HealthMode.Results;
     }
 
-    private async Task RunAsync()
+    /// <summary>Runs a check and shows its report. Quick actions call this too; it does nothing while a check runs.</summary>
+    public async Task RunAsync(CheckRequest request)
     {
+        if (IsRunning)
+        {
+            return;
+        }
+
         await _tools.LoadTask;
         // F5 can start a check before the setup page has looked at this PC; the PawnIO option depends on it.
         await RefreshComponentsAsync();
         var options = new ReportOptions
         {
-            StressTest = _stressSeconds > 0,
-            StressSeconds = Math.Max(_stressSeconds, 10),
-            StartupScan = _includeStartup,
-            InstallPawnIo = _installPawnIo && _canInstallPawnIo,
+            StressTest = request.StressSeconds > 0,
+            StressSeconds = Math.Max(request.StressSeconds, 10),
+            StartupScan = request.StartupScan,
+            InstallPawnIo = request.InstallPawnIo && _canInstallPawnIo,
+            Only = request.Only,
+            Scope = request.Scope,
         };
 
         List<PlannedStep> plan = ReportRunner.Plan(options);
@@ -273,7 +303,7 @@ public sealed class HealthViewModel : ObservableObject
             Steps.Add(step.Status);
         }
 
-        RunTitle = $"Checking {Environment.MachineName}";
+        RunTitle = request.Title ?? $"Checking {Environment.MachineName}";
         UpdateProgress();
         Mode = HealthMode.Running;
 

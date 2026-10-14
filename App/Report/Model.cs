@@ -29,6 +29,10 @@ public sealed class DiagnosticReport
     public DateTime CreatedAt { get; set; }
     public double DurationSeconds { get; set; }
     public string MachineName { get; set; } = "";
+
+    /// <summary>What a Quick action or Custom diagnosis covered; null for a full health check.</summary>
+    public string? Scope { get; set; }
+
     public SystemInfo System { get; set; } = new();
     public MemoryInfo Memory { get; set; } = new();
     public List<DiskInfo> Disks { get; set; } = new();
