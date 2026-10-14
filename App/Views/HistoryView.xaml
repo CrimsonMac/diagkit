@@ -35,7 +35,7 @@
                 <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:ReportListingViewModel}">
-                            <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6"
+                            <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6"
                                     Margin="0,0,0,8" Padding="16,12">
                                 <Grid>
                                     <Grid.ColumnDefinitions>

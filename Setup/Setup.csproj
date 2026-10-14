@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="..\Shared\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
     <Page Include="..\Shared\UI\Theme.xaml" Link="Themes\Theme.xaml" />
+    <Page Include="..\Shared\UI\Palette.*.xaml" Link="Themes\%(Filename)%(Extension)" />
     <Resource Include="..\App\Assets\app.ico" Link="Assets\app.ico" />
   </ItemGroup>
 

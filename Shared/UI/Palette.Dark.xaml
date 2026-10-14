@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    mc:Ignorable="po">
+
+    <!-- Dark palette: graphite, one blue accent. Palette.Light.xaml must define the same keys. -->
+    <SolidColorBrush x:Key="Bg" Color="#14171C" po:Freeze="True" />
+    <SolidColorBrush x:Key="Rail" Color="#0F1115" po:Freeze="True" />
+    <SolidColorBrush x:Key="Surface" Color="#1B1F26" po:Freeze="True" />
+    <SolidColorBrush x:Key="Raised" Color="#232831" po:Freeze="True" />
+    <SolidColorBrush x:Key="Pressed" Color="#2B313C" po:Freeze="True" />
+    <SolidColorBrush x:Key="Line" Color="#272C35" po:Freeze="True" />
+    <SolidColorBrush x:Key="LineStrong" Color="#363D49" po:Freeze="True" />
+    <SolidColorBrush x:Key="HoverTint" Color="#0DFFFFFF" po:Freeze="True" />
+    <SolidColorBrush x:Key="Text" Color="#E9ECF1" po:Freeze="True" />
+    <SolidColorBrush x:Key="Muted" Color="#99A2B0" po:Freeze="True" />
+    <SolidColorBrush x:Key="Faint" Color="#646D7B" po:Freeze="True" />
+    <SolidColorBrush x:Key="Accent" Color="#4F9CFF" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentHover" Color="#6DAEFF" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentPressed" Color="#3D86E8" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentSoft" Color="#264F9CFF" po:Freeze="True" />
+    <SolidColorBrush x:Key="AccentLine" Color="#804F9CFF" po:Freeze="True" />
+    <SolidColorBrush x:Key="OnAccent" Color="#07111F" po:Freeze="True" />
+    <SolidColorBrush x:Key="CloseHover" Color="#C42B1C" po:Freeze="True" />
+    <SolidColorBrush x:Key="WarnSoft" Color="#26FFB020" po:Freeze="True" />
+    <SolidColorBrush x:Key="OkSoft" Color="#224ADE80" po:Freeze="True" />
+
+    <!-- LED colours. Keys match LedState names; the Led template in Theme.xaml picks them by state. -->
+    <SolidColorBrush x:Key="Led.Ok" Color="#4ADE80" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Info" Color="#7FA7D9" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Warning" Color="#FFB020" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Critical" Color="#FF5A5F" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Busy" Color="#5AA2FF" po:Freeze="True" />
+    <SolidColorBrush x:Key="Led.Off" Color="#3A424F" po:Freeze="True" />
+
+</ResourceDictionary>

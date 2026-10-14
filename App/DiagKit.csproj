@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="..\Shared\**\*.cs" Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
     <Page Include="..\Shared\UI\Theme.xaml" Link="Themes\Theme.xaml" />
+    <Page Include="..\Shared\UI\Palette.*.xaml" Link="Themes\%(Filename)%(Extension)" />
     <EmbeddedResource Include="tools.default.json" LogicalName="DiagKit.tools.default.json" />
     <Resource Include="Assets\app.ico" />
   </ItemGroup>

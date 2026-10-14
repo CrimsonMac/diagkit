@@ -9,7 +9,7 @@
         <StackPanel Margin="32,26,32,44" MaxWidth="1000" HorizontalAlignment="Left">
 
             <!-- Verdict: the first and largest thing on the page -->
-            <TextBlock Text="{Binding MachineLine}" FontFamily="{StaticResource Font.Display}" FontSize="13" Foreground="{StaticResource Muted}" />
+            <TextBlock Text="{Binding MachineLine}" FontFamily="{StaticResource Font.Display}" FontSize="13" Foreground="{DynamicResource Muted}" />
             <DockPanel Margin="0,12,0,0">
                 <ctl:Led DockPanel.Dock="Left" State="{Binding VerdictLed}" Width="30" Height="30" Padding="8" Margin="-8,0,10,0" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Verdict}" Style="{StaticResource Text.Verdict}" VerticalAlignment="Center" />
@@ -27,7 +27,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,30,6">
                             <ctl:Led State="{Binding Led}" Margin="0,0,6,0" />
                             <TextBlock Text="{Binding Count}" FontFamily="{StaticResource Font.Display}" FontSize="21" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Label}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="7,2,0,0" />
+                            <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Margin="7,2,0,0" />
                         </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -65,7 +65,7 @@
             <ItemsControl ItemsSource="{Binding Findings}" Focusable="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:FindingViewModel}">
-                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,8">
+                        <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,8">
                             <Grid>
                                 <Border x:Name="Edge" Width="3" HorizontalAlignment="Left" CornerRadius="6,0,0,6" Background="Transparent" />
                                 <StackPanel>
@@ -81,18 +81,18 @@
                                             <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" TextWrapping="Wrap" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="2" Text="{Binding Category}" Style="{StaticResource Text.Faint}" Margin="16,0" VerticalAlignment="Center" />
                                             <TextBlock x:Name="Chevron" Grid.Column="3" Style="{StaticResource Text.Glyph}" Text="&#xE70D;" FontSize="11"
-                                                       Foreground="{StaticResource Faint}" />
+                                                       Foreground="{DynamicResource Faint}" />
                                         </Grid>
                                     </ToggleButton>
                                     <StackPanel Margin="40,0,24,16" Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
-                                        <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{StaticResource Muted}" LineHeight="20"
+                                        <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" LineHeight="20"
                                                    MaxWidth="760" HorizontalAlignment="Left" />
                                         <StackPanel Margin="0,12,0,0" Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}">
                                             <TextBlock Text="What to do" FontFamily="{StaticResource Font.Display}" FontWeight="SemiBold" FontSize="12.5"
-                                                       Foreground="{StaticResource Muted}" />
+                                                       Foreground="{DynamicResource Muted}" />
                                             <TextBlock Text="{Binding Action}" TextWrapping="Wrap" Margin="0,3,0,0" LineHeight="20" MaxWidth="760" HorizontalAlignment="Left" />
                                         </StackPanel>
-                                        <Border Margin="0,12,0,0" Background="{StaticResource Bg}" CornerRadius="4" Padding="12,7"
+                                        <Border Margin="0,12,0,0" Background="{DynamicResource Bg}" CornerRadius="4" Padding="12,7"
                                                 Visibility="{Binding HasEvidence, Converter={StaticResource BoolToVis}}">
                                             <ItemsControl ItemsSource="{Binding Evidence}" Focusable="False">
                                                 <ItemsControl.ItemTemplate>
@@ -108,10 +108,10 @@
                         </Border>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding Severity}" Value="{x:Static report:Severity.Critical}">
-                                <Setter TargetName="Edge" Property="Background" Value="{StaticResource Led.Critical}" />
+                                <Setter TargetName="Edge" Property="Background" Value="{DynamicResource Led.Critical}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Severity}" Value="{x:Static report:Severity.Warning}">
-                                <Setter TargetName="Edge" Property="Background" Value="{StaticResource Led.Warning}" />
+                                <Setter TargetName="Edge" Property="Background" Value="{DynamicResource Led.Warning}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsExpanded}" Value="True">
                                 <Setter TargetName="Chevron" Property="Text" Value="&#xE70E;" />
@@ -134,22 +134,22 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:ReadingViewModel}">
-                            <Border Width="178" Margin="0,0,8,8" Padding="16,14" Background="{StaticResource Surface}"
-                                    BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6">
+                            <Border Width="178" Margin="0,0,8,8" Padding="16,14" Background="{DynamicResource Surface}"
+                                    BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="6">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock x:Name="Value" Text="{Binding Reading.Value}" Style="{StaticResource Text.Readout}" />
-                                        <TextBlock Text="{Binding Reading.Unit}" Foreground="{StaticResource Muted}" FontSize="13" VerticalAlignment="Bottom" Margin="5,0,0,4" />
+                                        <TextBlock Text="{Binding Reading.Unit}" Foreground="{DynamicResource Muted}" FontSize="13" VerticalAlignment="Bottom" Margin="5,0,0,4" />
                                     </StackPanel>
                                     <TextBlock Text="{Binding Reading.Label}" Style="{StaticResource Text.Muted}" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                                 </StackPanel>
                             </Border>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding Reading.Severity}" Value="{x:Static report:Severity.Warning}">
-                                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource Led.Warning}" />
+                                    <Setter TargetName="Value" Property="Foreground" Value="{DynamicResource Led.Warning}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding Reading.Severity}" Value="{x:Static report:Severity.Critical}">
-                                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource Led.Critical}" />
+                                    <Setter TargetName="Value" Property="Foreground" Value="{DynamicResource Led.Critical}" />
                                 </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
@@ -160,7 +160,7 @@
             <!-- Drives -->
             <StackPanel Visibility="{Binding HasDrives, Converter={StaticResource BoolToVis}}" Grid.IsSharedSizeScope="True">
                 <TextBlock Text="Drives" Style="{StaticResource Text.Section}" />
-                <Grid Margin="0,0,0,6" TextElement.Foreground="{StaticResource Muted}" TextElement.FontSize="12.5">
+                <Grid Margin="0,0,0,6" TextElement.Foreground="{DynamicResource Muted}" TextElement.FontSize="12.5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Kind" />
@@ -181,7 +181,7 @@
                 <ItemsControl ItemsSource="{Binding Drives}" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:DriveRowViewModel}">
-                            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,10">
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,10">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -193,8 +193,8 @@
                                         <ColumnDefinition Width="Auto" SharedSizeGroup="Wear" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding Row.Name}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Row.Kind}" Foreground="{StaticResource Muted}" Margin="18,0,0,0" />
-                                    <TextBlock Grid.Column="2" Text="{Binding Row.Size}" Foreground="{StaticResource Muted}" Margin="18,0,0,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Row.Kind}" Foreground="{DynamicResource Muted}" Margin="18,0,0,0" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Row.Size}" Foreground="{DynamicResource Muted}" Margin="18,0,0,0" />
                                     <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="12,0,0,0">
                                         <ctl:Led State="{Binding Led}" Margin="0,0,4,0" />
                                         <TextBlock Text="{Binding Row.Health}" VerticalAlignment="Center" />
@@ -214,13 +214,13 @@
             <ItemsControl ItemsSource="{Binding Overview}" Focusable="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type report:Fact}">
-                        <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,9">
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,9">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="160" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource Muted}" />
+                                <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Muted}" />
                                 <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
                             </Grid>
                         </Border>
@@ -233,7 +233,7 @@
             <ItemsControl ItemsSource="{Binding Collectors}" Focusable="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:LedRow}">
-                        <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,8">
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,8">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="26" />

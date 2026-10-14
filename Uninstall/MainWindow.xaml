@@ -4,18 +4,18 @@
         xmlns:ctl="clr-namespace:DiagKit.Controls"
         Title="Uninstall DiagKit" Width="760" Height="640" MinWidth="560" MinHeight="460"
         WindowStartupLocation="CenterScreen" Icon="Assets/app.ico"
-        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}"
         FontFamily="{StaticResource Font.Body}" FontSize="13.5" UseLayoutRounding="True">
     <Window.Resources>
         <!-- A radio button drawn as a selectable card. -->
         <Style x:Key="Choice" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="Foreground" Value="{DynamicResource Text}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Bd" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                        <Border x:Name="Bd" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="1"
                                 CornerRadius="8" Padding="16,12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -23,19 +23,19 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <Grid Width="18" Height="18" VerticalAlignment="Top" Margin="0,2,14,0">
-                                    <Ellipse x:Name="Ring" Stroke="{StaticResource Faint}" StrokeThickness="1.5" />
-                                    <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{StaticResource Accent}" Visibility="Collapsed" />
+                                    <Ellipse x:Name="Ring" Stroke="{DynamicResource Faint}" StrokeThickness="1.5" />
+                                    <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource Accent}" Visibility="Collapsed" />
                                 </Grid>
                                 <ContentPresenter Grid.Column="1" />
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Raised}" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Raised}" />
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentLine}" />
-                                <Setter TargetName="Ring" Property="Stroke" Value="{StaticResource Accent}" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentLine}" />
+                                <Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource Accent}" />
                                 <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -50,7 +50,7 @@
                     <ColumnDefinition Width="18" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Ellipse Width="5" Height="5" Fill="{StaticResource Faint}" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2,8,0,0" />
+                <Ellipse Width="5" Height="5" Fill="{DynamicResource Faint}" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="2,8,0,0" />
                 <TextBlock Grid.Column="1" Text="{Binding}" Style="{StaticResource Text.Muted}" FontSize="13" LineHeight="19" />
             </Grid>
         </DataTemplate>
@@ -102,14 +102,14 @@
                 <TextBlock Text="Will be kept" Style="{StaticResource Text.Section}" Margin="0,14,0,10" />
                 <ItemsControl ItemsSource="{Binding WillKeep}" ItemTemplate="{StaticResource Bullet}" Focusable="False" />
 
-                <Border BorderBrush="{StaticResource Led.Warning}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0"
+                <Border BorderBrush="{DynamicResource Led.Warning}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0"
                         Visibility="{Binding OtherPcsText, Converter={StaticResource NotEmptyToVis}}">
                     <DockPanel>
                         <ctl:Led State="Warning" VerticalAlignment="Top" Margin="0,1,10,0" />
                         <TextBlock Text="{Binding OtherPcsText}" TextWrapping="Wrap" LineHeight="19" />
                     </DockPanel>
                 </Border>
-                <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,10,0,0"
+                <Border BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,10,0,0"
                         Visibility="{Binding RunningText, Converter={StaticResource NotEmptyToVis}}">
                     <DockPanel>
                         <ctl:Led State="Info" VerticalAlignment="Top" Margin="0,1,10,0" />

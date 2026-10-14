@@ -5,7 +5,7 @@
         xmlns:local="clr-namespace:DiagKit.Setup"
         Title="{Binding Title}" Width="900" Height="720" MinWidth="680" MinHeight="520"
         WindowStartupLocation="CenterScreen" Icon="Assets/app.ico"
-        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}"
         FontFamily="{StaticResource Font.Body}" FontSize="13.5" UseLayoutRounding="True">
     <Window.Resources>
         <!-- Progress row: LED, name and the latest status line. -->
@@ -65,10 +65,10 @@
                                 <DataTemplate DataType="{x:Type local:DriveChoice}">
                                     <Button Style="{StaticResource Button.Ghost}" Margin="0,0,8,0" Padding="10,5"
                                             Command="{Binding DataContext.UseDriveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                            CommandParameter="{Binding Root}" BorderBrush="{StaticResource Line}">
+                                            CommandParameter="{Binding Root}" BorderBrush="{DynamicResource Line}">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE88E;" FontSize="13" Margin="0,0,8,0" />
-                                            <TextBlock Text="{Binding Text}" Foreground="{StaticResource Text}" />
+                                            <TextBlock Text="{Binding Text}" Foreground="{DynamicResource Text}" />
                                             <TextBlock Text="{Binding Free}" Margin="8,0,0,0" />
                                         </StackPanel>
                                     </Button>
@@ -107,7 +107,7 @@
                                                 <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanChange}">
                                                     <TextBlock>
                                                         <Run Text="{Binding Name, Mode=OneWay}" />
-                                                        <Run Text="{Binding Note, Mode=OneWay}" Foreground="{StaticResource Faint}" FontSize="12" />
+                                                        <Run Text="{Binding Note, Mode=OneWay}" Foreground="{DynamicResource Faint}" FontSize="12" />
                                                     </TextBlock>
                                                 </CheckBox>
                                             </DockPanel>
