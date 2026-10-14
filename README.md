@@ -58,7 +58,7 @@ setup.exe [/target <folder>] [/tools name,name] [/force] [/quiet]
 The kit:
 
 ```
-diagkit.1.1.1\
+diagkit.1.1.2\
   DiagKit.exe           the app (runs as administrator); one file, about 4.5 MB
   Uninstall.exe         cleans this PC and/or removes the kit
   Tools\                one folder per tool, plus tools.json (the tool list, editable)
@@ -190,14 +190,14 @@ Release\      build output: setup.exe (not in git)
 ## Compatibility and testing
 
 DiagKit has been run on:
-- **Windows 11 24H2**: the Tools page, the health check including sensors, setup and Uninstall.
+- **Windows 11 24H2**: the Tools page, the health check including sensors, setup and Uninstall. As an administrator, all nine quick actions and a custom diagnosis, and the System theme following Windows when it was switched from dark to light while DiagKit was open.
 - **Windows 10**, in a virtual machine: everything runs, but a VM exposes few of the sensors and drive details real hardware has, so some health-check readings were empty. They use the same code paths as on Windows 11.
 
 Also tested with non-elevated test builds:
 - registry cleanup: a created key was removed, an existing key restored, and a control tool without trace rules left its key in place;
 - setup: a new kit, an update, a GUI install with a tool unticked, an upgrade of a kit made by the old build script, and every fallback, by blocking the main hosts in a debug build;
 - Uninstall against a kit with planted traces, which removed exactly the kit's entries and kept the user's files and other programs' records. Prefetch decoding was round-trip tested.
-- on Windows 11 24H2, driven through UI Automation: setup's folder picker (browsing, making a new folder, handing it back to setup); switching the theme from dark to light while DiagKit runs, with the choice saved to `settings.json`; and the Quick page, with the System and Windows quick action and a custom diagnosis of Memory and Devices, both producing scoped reports.
+- on Windows 11 24H2, driven through UI Automation: setup's folder picker (browsing, making a new folder, handing it back to setup); switching the theme from dark to light while DiagKit runs, with the choice saved to `settings.json`; the Quick page, with the System and Windows quick action and a custom diagnosis of Memory and Devices, both producing scoped reports; the Back buttons on reports; and setup's Start menu shortcut, created with the right target and recorded in the kit, then removed again by unticking the option (the same code Uninstall calls).
 
 Not yet exercised in a controlled test:
 - the PawnIO silent install and uninstall;
@@ -205,8 +205,6 @@ Not yet exercised in a controlled test:
 - deleting Prefetch and background-activity entries.
 
 These use documented Windows APIs and fail safely: anything that can't be removed is reported and retried later.
-
-Also not yet tried: the System theme following a change of Windows' app mode while DiagKit is open, and the remaining quick actions; only the two above ran, and without elevation. They run the same steps as the full health check.
 
 ## Troubleshooting
 
