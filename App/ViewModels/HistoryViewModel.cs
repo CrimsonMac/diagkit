@@ -46,15 +46,14 @@ public sealed class ReportListingViewModel
 
 public sealed class HistoryViewModel : ObservableObject
 {
-    private readonly Action<ReportViewModel> _open;
+    private ReportViewModel? _currentReport;
     private readonly Action<string, LedState> _notify;
     private readonly Func<string, bool> _confirm;
     private bool _isLoading;
     private bool _loadedOnce;
 
-    public HistoryViewModel(Action<ReportViewModel> open, Action<string, LedState> notify, Func<string, bool> confirm)
+    public HistoryViewModel(Action<string, LedState> notify, Func<string, bool> confirm)
     {
-        _open = open;
         _notify = notify;
         _confirm = confirm;
         RefreshCommand = new AsyncCommand(LoadAsync);
@@ -82,6 +81,21 @@ public sealed class HistoryViewModel : ObservableObject
     }
 
     public bool IsEmpty => !_isLoading && Items.Count == 0;
+
+    /// <summary>The saved report being viewed on this page; null shows the list.</summary>
+    public ReportViewModel? CurrentReport
+    {
+        get => _currentReport;
+        private set
+        {
+            if (SetProperty(ref _currentReport, value))
+            {
+                OnPropertyChanged(nameof(IsListing));
+            }
+        }
+    }
+
+    public bool IsListing => _currentReport == null;
 
     public Task EnsureLoadedAsync() => _loadedOnce ? Task.CompletedTask : LoadAsync();
 
@@ -130,7 +144,8 @@ public sealed class HistoryViewModel : ObservableObject
             return;
         }
 
-        _open(new ReportViewModel(report, item.Listing.Folder, item.Listing.HtmlPath, _notify, fromHistory: true));
+        CurrentReport = new ReportViewModel(report, item.Listing.Folder, item.Listing.HtmlPath, _notify, fromHistory: true)
+            .WithBack("Back to reports", () => CurrentReport = null);
     }
 
     internal void Delete(ReportListingViewModel item)

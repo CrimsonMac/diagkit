@@ -3,20 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:DiagKit.ViewModels"
              xmlns:views="clr-namespace:DiagKit.Views"
-             xmlns:report="clr-namespace:DiagKit.Report"
              xmlns:ctl="clr-namespace:DiagKit.Controls">
-    <UserControl.Resources>
-        <DataTemplate DataType="{x:Type vm:ReportViewModel}">
-            <views:ReportView />
-        </DataTemplate>
-    </UserControl.Resources>
-
     <Grid>
         <!-- ============================== Setup -->
         <ScrollViewer Visibility="{Binding IsSetup, Converter={StaticResource BoolToVis}}" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" Focusable="False">
             <StackPanel Margin="32,26,32,32" MaxWidth="800" HorizontalAlignment="Left">
-                <TextBlock Text="Health check" Style="{StaticResource Text.PageTitle}" />
+                <TextBlock Text="Full health check" Style="{StaticResource Text.PageTitle}" />
                 <TextBlock Style="{StaticResource Text.Lede}" Margin="0,8,0,0">
                     <Run Text="Reads drive health," /> <Run Text="{Binding EventWindowDays, Mode=OneTime}" /> <Run Text="days of crash and hardware-error logs, temperatures and startup entries, then explains what it found and what to do about it." />
                 </TextBlock>
@@ -118,53 +111,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- ============================== Running -->
-        <Grid Margin="32,26,12,0" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-            <DockPanel Margin="0,0,20,0">
-                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Secondary}" Command="{Binding CancelCommand}" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource Text.Glyph}" Text="&#xE711;" FontSize="11" Margin="0,0,8,0" />
-                        <TextBlock Text="Cancel" />
-                    </StackPanel>
-                </Button>
-                <StackPanel>
-                    <TextBlock Text="{Binding RunTitle}" Style="{StaticResource Text.PageTitle}" />
-                    <TextBlock Text="{Binding ProgressText}" Style="{StaticResource Text.Muted}" Margin="0,4,0,0" />
-                </StackPanel>
-            </DockPanel>
-            <ScrollViewer Grid.Row="1" Margin="0,18,0,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
-                <ItemsControl ItemsSource="{Binding Steps}" Margin="0,0,20,24" Focusable="False">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type report:CollectorStatus}">
-                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,12">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="30" />
-                                        <ColumnDefinition Width="260" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="64" />
-                                    </Grid.ColumnDefinitions>
-                                    <ctl:Led State="{Binding Led}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0" />
-                                    <StackPanel Grid.Column="1" Margin="0,0,16,0">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Text.Faint}" Margin="0,2,0,0" />
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Text.Muted}" VerticalAlignment="Top" Margin="0,1,0,0" />
-                                    <TextBlock Grid.Column="3" Text="{Binding SecondsText}" FontFamily="{StaticResource Font.Display}"
-                                               Foreground="{DynamicResource Faint}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,1,0,0" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Grid>
-
-        <!-- ============================== Results -->
-        <ContentControl Content="{Binding Report}" Focusable="False" Visibility="{Binding IsResults, Converter={StaticResource BoolToVis}}" />
+        <!-- ============================== Running and results -->
+        <views:CheckRunView />
     </Grid>
 </UserControl>

@@ -22,6 +22,30 @@ public enum HealthMode
 
 public sealed record ComponentItem(LedState Led, string Name, string Text);
 
+/// <summary>
+/// Shared by the full check and the Quick page so only one check runs at a time: two would fight over the sensors,
+/// and a load test would skew the other's readings.
+/// </summary>
+public sealed class CheckLock
+{
+    private bool _isBusy;
+
+    public event Action? Changed;
+
+    public bool IsBusy
+    {
+        get => _isBusy;
+        set
+        {
+            if (_isBusy != value)
+            {
+                _isBusy = value;
+                Changed?.Invoke();
+            }
+        }
+    }
+}
+
 /// <summary>What to run: the full check, or the parts picked on the Quick actions page.</summary>
 public sealed class CheckRequest
 {
@@ -45,6 +69,8 @@ public sealed class HealthViewModel : ObservableObject
     private readonly Action<string, LedState> _notify;
     private readonly Action _reportsChanged;
     private readonly AppSettings _settings;
+    private readonly CheckLock _gate;
+    private readonly string _backText;
     private HealthMode _mode = HealthMode.Setup;
     private ReportViewModel? _report;
     private int _stressSeconds;
@@ -57,12 +83,15 @@ public sealed class HealthViewModel : ObservableObject
     private CancellationTokenSource? _cts;
     private CollectorStatus? _stressStatus;
 
-    public HealthViewModel(ToolsViewModel tools, Action<string, LedState> notify, Action reportsChanged, AppSettings settings)
+    /// <param name="backText">Label of the report's Back button, which returns to this page's start ("Back to quick actions").</param>
+    public HealthViewModel(ToolsViewModel tools, Action<string, LedState> notify, Action reportsChanged, AppSettings settings, CheckLock gate, string backText)
     {
         _tools = tools;
         _notify = notify;
         _reportsChanged = reportsChanged;
         _settings = settings;
+        _gate = gate;
+        _backText = backText;
         ApplyDefaults();
         IsElevated = SystemProbe.IsElevated();
         RunCommand = new AsyncCommand(() => RunAsync(new CheckRequest
@@ -70,7 +99,7 @@ public sealed class HealthViewModel : ObservableObject
             StressSeconds = _stressSeconds,
             StartupScan = _includeStartup,
             InstallPawnIo = _installPawnIo,
-        }), () => Mode != HealthMode.Running);
+        }), () => !_gate.IsBusy);
         CancelCommand = new RelayCommand(() => _cts?.Cancel(), () => Mode == HealthMode.Running);
         ShowLastReportCommand = new RelayCommand(() =>
         {
@@ -84,6 +113,11 @@ public sealed class HealthViewModel : ObservableObject
             Mode = HealthMode.Setup;
             _ = RefreshComponentsAsync();
         });
+        _gate.Changed += () =>
+        {
+            (RunCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            OnPropertyChanged(nameof(IsAnyRunning));
+        };
     }
 
     public ObservableCollection<CollectorStatus> Steps { get; } = new();
@@ -110,6 +144,9 @@ public sealed class HealthViewModel : ObservableObject
             }
         }
     }
+
+    /// <summary>True while any check runs, here or on the other page.</summary>
+    public bool IsAnyRunning => _gate.IsBusy;
 
     public bool IsSetup => _mode == HealthMode.Setup;
     public bool IsRunning => _mode == HealthMode.Running;
@@ -261,21 +298,34 @@ public sealed class HealthViewModel : ObservableObject
         InstallPawnIo = _settings.OfferPawnIo;
     }
 
-    public void ShowReport(ReportViewModel report)
+    private void ShowReport(ReportViewModel report)
     {
-        Report = report;
+        Report = report.WithBack(_backText, () => NewCheckCommand.Execute(null));
         OnPropertyChanged(nameof(HasPreviousReport));
         Mode = HealthMode.Results;
     }
 
-    /// <summary>Runs a check and shows its report. Quick actions call this too; it does nothing while a check runs.</summary>
+    /// <summary>Runs a check and shows its report. Does nothing while a check runs, here or on the other page.</summary>
     public async Task RunAsync(CheckRequest request)
     {
-        if (IsRunning)
+        if (_gate.IsBusy)
         {
             return;
         }
 
+        _gate.IsBusy = true;
+        try
+        {
+            await RunCoreAsync(request);
+        }
+        finally
+        {
+            _gate.IsBusy = false;
+        }
+    }
+
+    private async Task RunCoreAsync(CheckRequest request)
+    {
         await _tools.LoadTask;
         // F5 can start a check before the setup page has looked at this PC; the PawnIO option depends on it.
         await RefreshComponentsAsync();
@@ -332,8 +382,8 @@ public sealed class HealthViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            Mode = _report != null ? HealthMode.Results : HealthMode.Setup;
-            _notify("Health check cancelled. Nothing was saved.", LedState.Info);
+            Mode = HealthMode.Setup;
+            _notify("Check cancelled. Nothing was saved.", LedState.Info);
         }
         catch (Exception ex)
         {

@@ -79,7 +79,7 @@
                                                  IsChecked="{Binding StartPage, Converter={StaticResource EqualsParam}, ConverterParameter=Tools}" />
                                     <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStart" Content="Quick"
                                                  IsChecked="{Binding StartPage, Converter={StaticResource EqualsParam}, ConverterParameter=Quick}" />
-                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStart" Content="Health"
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStart" Content="Full check"
                                                  IsChecked="{Binding StartPage, Converter={StaticResource EqualsParam}, ConverterParameter=Health}" />
                                     <RadioButton Style="{StaticResource Segment}" GroupName="SettingsStart" Content="Reports"
                                                  IsChecked="{Binding StartPage, Converter={StaticResource EqualsParam}, ConverterParameter=History}" />
@@ -101,7 +101,7 @@
 
                 <!-- Health check defaults -->
                 <TextBlock Text="Full health check" Style="{StaticResource Text.Section}" Margin="0,26,0,4" />
-                <TextBlock Text="What the Health page starts with. You can still change it there before each check."
+                <TextBlock Text="What the Full check page starts with. You can still change it there before each check."
                            Style="{StaticResource Text.Muted}" Margin="0,0,0,12" />
                 <Border Style="{StaticResource Card}">
                     <StackPanel>

@@ -74,7 +74,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (vm.Health.IsRunning && !Confirm("A health check is still running. Close DiagKit anyway? The partial report will be discarded."))
+        if (vm.IsCheckRunning && !Confirm("A check is still running. Close DiagKit anyway? The partial report will be discarded."))
         {
             e.Cancel = true;
             return;

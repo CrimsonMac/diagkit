@@ -137,4 +137,16 @@ public sealed class ReportViewModel : ObservableObject
     public ICommand OpenHtmlCommand { get; }
     public ICommand OpenFolderCommand { get; }
     public ICommand ExpandAllCommand { get; }
+
+    /// <summary>Leaves the report for the page it was opened from; set by whoever shows it.</summary>
+    public ICommand? BackCommand { get; private set; }
+
+    public string BackText { get; private set; } = "Back";
+
+    public ReportViewModel WithBack(string text, Action back)
+    {
+        BackText = text;
+        BackCommand = new RelayCommand(back);
+        return this;
+    }
 }

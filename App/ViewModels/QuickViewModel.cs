@@ -57,26 +57,24 @@ public sealed class CheckOption : ObservableObject
 
 /// <summary>
 /// The Quick actions page: single checks a click away, and Custom diagnosis for a hand-picked set, so seeing one
-/// thing does not mean sitting through the whole health check. Both run through the Health page, which shows the
-/// progress and the report.
+/// thing does not mean sitting through the whole health check. Progress and the report show on this page, through
+/// its own <see cref="Runner"/>; the report's Back button returns to the actions.
 /// </summary>
 public sealed class QuickViewModel : ObservableObject
 {
-    private readonly Action _showHealth;
     private readonly AppSettings _settings;
     private readonly RelayCommand _runCustomCommand;
     private int _customStress;
     private bool _installPawnIo;
 
-    public QuickViewModel(HealthViewModel health, Action showHealth, AppSettings settings)
+    public QuickViewModel(HealthViewModel runner, AppSettings settings)
     {
-        Health = health;
-        _showHealth = showHealth;
+        Runner = runner;
         _settings = settings;
         _installPawnIo = settings.OfferPawnIo;
 
         QuickRun Run(string label, string title, int stress, params CheckId[] checks)
-            => new(label, new RelayCommand(() => Start(title, stress, checks), () => !Health.IsRunning));
+            => new(label, new RelayCommand(() => Start(title, stress, checks), () => !Runner.IsAnyRunning));
 
         Actions = new List<QuickAction>
         {
@@ -101,19 +99,20 @@ public sealed class QuickViewModel : ObservableObject
         };
 
         Checks = HealthChecks.Selectable.Select(c => new CheckOption(c, OnCustomChanged)).ToList();
-        _runCustomCommand = new RelayCommand(StartCustom, () => !Health.IsRunning && (Checks.Any(c => c.IsSelected) || _customStress > 0));
+        _runCustomCommand = new RelayCommand(StartCustom, () => !Runner.IsAnyRunning && (Checks.Any(c => c.IsSelected) || _customStress > 0));
         SelectAllCommand = new RelayCommand(() => SetAll(true));
         SelectNoneCommand = new RelayCommand(() => SetAll(false));
-        Health.PropertyChanged += (_, e) =>
+        Runner.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(HealthViewModel.IsRunning))
+            if (e.PropertyName == nameof(HealthViewModel.IsAnyRunning))
             {
                 RefreshCommands();
             }
         };
     }
 
-    public HealthViewModel Health { get; }
+    /// <summary>Runs the picked checks and holds their progress and report.</summary>
+    public HealthViewModel Runner { get; }
     public List<QuickAction> Actions { get; }
     public List<CheckOption> Checks { get; }
     public ICommand RunCustomCommand => _runCustomCommand;
@@ -180,8 +179,7 @@ public sealed class QuickViewModel : ObservableObject
 
     private void Run(HashSet<CheckId> only, int stress, string scope, string title)
     {
-        _showHealth();
-        _ = Health.RunAsync(new CheckRequest
+        _ = Runner.RunAsync(new CheckRequest
         {
             Only = only,
             StressSeconds = stress,

@@ -85,9 +85,9 @@ diagkit.1.1.1\
 - **Quick actions**: Drive health (drive health and free space), Temperatures, CPU load test (30 s or 2 min), Crashes and hardware errors (event logs and crash dumps), Memory, Devices, Battery, Startup programs, and System and Windows.
 - **Custom diagnosis**: tick any of the health-check steps below, optionally add the load test, and run them together.
 
-Both show their progress on the Health page and save a normal report, marked with what it covered ("Quick check: Drive health"); the verdict then speaks only for the parts that were checked. The system overview is always included so the report names the PC, and the load test brings the temperature step along because it reads temperatures through it.
+Both run right on the Quick page, where the report then appears with **Back to quick actions** at the top. Each saves a normal report, marked with what it covered ("Quick check: Drive health"); the verdict then speaks only for the parts that were checked. The system overview is always included so the report names the PC, and the load test brings the temperature step along because it reads temperatures through it.
 
-**Health** (Ctrl+3, F5 from anywhere) runs the full check, with these steps:
+**Full check** (Ctrl+3, F5 from anywhere) runs the whole health check, with these steps:
 
 | Step | Source | Needs |
 |---|---|---|
@@ -104,11 +104,11 @@ Both show their progress on the Health page and save a normal report, marked wit
 | Startup entries (optional) | `autorunsc64 -s -m` | autorunsc64.exe |
 | CPU load test (optional, 30 s or 2 min) | all-core vector load; temperature, clock and power sampled each second | nothing (clock falls back to perf counters) |
 
-Steps in the same phase run in parallel, and each has its own timeout. A hung or failing step is marked as such and the rest of the report still completes.
+Steps in the same phase run in parallel, and each has its own timeout. A hung or failing step is marked as such and the rest of the report still completes. The report then opens on the same page, with **Back to the full check** at the top.
 
 The rules turn the data into findings, each with a severity, a plain explanation, **what to do**, and the evidence behind it. Thresholds are conservative and the wording is hedged where the data can't prove a cause. For example, `WHEA_UNCORRECTABLE_ERROR` dumps always name `ntoskrnl.exe`, so the report says the error came from the hardware rather than blaming the kernel. Clocks dropping on a laptop under load is described as power-limit behaviour unless temperatures are also high.
 
-**Reports** (Ctrl+4) lists saved checks. Each one is a folder containing:
+**Reports** (Ctrl+4) lists saved checks; **Open** shows one right there, with **Back to reports** at the top. Only one check runs at a time, whichever page started it. Each report is a folder containing:
 - `report.html`: one self-contained file with no scripts or external assets, which works on a phone and follows light/dark mode. It's the one to send someone.
 - `report.json`: the full structured data.
 - `raw\`: every tool's original output.

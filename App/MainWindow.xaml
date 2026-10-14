@@ -99,7 +99,7 @@
                                  IsChecked="{Binding IsToolsPage, Mode=TwoWay}" ToolTip="Tools (Ctrl+1)" />
                     <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE945;" Content="Quick"
                                  IsChecked="{Binding IsQuickPage, Mode=TwoWay}" ToolTip="Quick actions and custom diagnosis (Ctrl+2)" />
-                    <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE95E;" Content="Health"
+                    <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE95E;" Content="Full check"
                                  IsChecked="{Binding IsHealthPage, Mode=TwoWay}" ToolTip="Full health check (Ctrl+3, F5 runs one)" />
                     <RadioButton Style="{StaticResource Rail.Item}" GroupName="Nav" Tag="&#xE81C;" Content="Reports"
                                  IsChecked="{Binding IsHistoryPage, Mode=TwoWay}" ToolTip="Saved reports (Ctrl+4)" />

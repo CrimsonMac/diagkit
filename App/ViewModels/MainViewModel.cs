@@ -30,12 +30,14 @@ public sealed class MainViewModel : ObservableObject
     {
         _confirm = confirm;
         Tools = new ToolsViewModel(iconLoader, ShowNotice);
-        History = new HistoryViewModel(OpenReport, ShowNotice, confirm);
-        Health = new HealthViewModel(Tools, ShowNotice, () => _ = History.LoadAsync(), settings);
-        Quick = new QuickViewModel(Health, () => Page = AppPage.Health, settings);
+        History = new HistoryViewModel(ShowNotice, confirm);
+        var gate = new CheckLock();
+        Health = new HealthViewModel(Tools, ShowNotice, () => _ = History.LoadAsync(), settings, gate, "Back to the full check");
+        Quick = new QuickViewModel(new HealthViewModel(Tools, ShowNotice, () => _ = History.LoadAsync(), settings, gate, "Back to quick actions"), settings);
         Settings = new SettingsViewModel(settings);
         Settings.Changed += Health.ApplyDefaults;
         Settings.Changed += Quick.ApplyDefaults;
+        Settings.Changed += Quick.Runner.ApplyDefaults;
         _currentPage = Tools;
         IsElevated = SystemProbe.IsElevated();
 
@@ -107,9 +109,13 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(IsHistoryPage));
             OnPropertyChanged(nameof(IsSettingsPage));
 
-            if ((value == AppPage.Health && Health.IsSetup) || value == AppPage.Quick)
+            if (value == AppPage.Health && Health.IsSetup)
             {
                 _ = Health.RefreshComponentsAsync();
+            }
+            else if (value == AppPage.Quick && Quick.Runner.IsSetup)
+            {
+                _ = Quick.Runner.RefreshComponentsAsync();
             }
             else if (value == AppPage.History)
             {
@@ -207,9 +213,11 @@ public sealed class MainViewModel : ObservableObject
 
     public bool HasRunningTools => Tools.RunningTools.Any();
 
+    public bool IsCheckRunning => Health.IsAnyRunning;
+
     public async Task StartAsync()
     {
-        // Started first: the Health page waits on the tool scan when it is the start page.
+        // Started first: the Full check page waits on the tool scan when it is the start page.
         Task load = Tools.LoadAsync();
         Page = Settings.StartPage;
         await load;
@@ -257,11 +265,5 @@ public sealed class MainViewModel : ObservableObject
 
         // The uninstaller closes anything still running from the kit; closing DiagKit first lets it finish its own cleanup.
         CloseRequested?.Invoke();
-    }
-
-    private void OpenReport(ReportViewModel report)
-    {
-        Health.ShowReport(report);
-        Page = AppPage.Health;
     }
 }
