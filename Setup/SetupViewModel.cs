@@ -285,15 +285,10 @@ public sealed class SetupViewModel : ObservableObject
 
     private void Browse()
     {
-        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        var dialog = new FolderPickerWindow(Directory.Exists(Parent) ? Parent : "") { Owner = Application.Current?.MainWindow };
+        if (dialog.ShowDialog() == true && dialog.Result != null)
         {
-            Description = "Choose the USB stick (or folder) for the kit. A diagkit folder is created inside it; pick an existing kit to update it.",
-            SelectedPath = Directory.Exists(Parent) ? Parent : "",
-            ShowNewFolderButton = true,
-        };
-        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            Parent = dialog.SelectedPath;
+            Parent = dialog.Result;
         }
     }
 
