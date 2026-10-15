@@ -58,7 +58,7 @@ setup.exe [/target <folder>] [/tools name,name] [/force] [/quiet]
 The kit:
 
 ```
-diagkit.1.1.2\
+diagkit.1.1.3\
   DiagKit.exe           the app (runs as administrator); one file, about 4.5 MB
   Uninstall.exe         cleans this PC and/or removes the kit
   Tools\                one folder per tool, plus tools.json (the tool list, editable)
