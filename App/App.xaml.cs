@@ -9,6 +9,9 @@ namespace DiagKit;
 
 public partial class App : Application
 {
+    /// <summary>A check asked for on the command line, started once the window is up.</summary>
+    public CheckArguments? StartupCheck { get; init; }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -27,7 +30,7 @@ public partial class App : Application
         ThemeManager.Apply(settings.Theme);
 
         var window = new MainWindow();
-        var vm = new MainViewModel(IconLoader.Load, window.Confirm, settings);
+        var vm = new MainViewModel(IconLoader.Load, window.Confirm, settings) { StartupCheck = StartupCheck };
         window.DataContext = vm;
         vm.CloseRequested += window.Close;
         MainWindow = window;

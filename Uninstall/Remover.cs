@@ -110,6 +110,7 @@ public sealed class Remover
             KitLayout.AppExe,
             KitLayout.UninstallExe,
             KitLayout.ErrorLog,
+            KitLayout.CheckLog,
             KitLayout.SettingsFile,
             KitLayout.ToolList, // kits made before 1.1 kept it in the root
             KitLedger.FileName,
@@ -211,6 +212,7 @@ public sealed class Remover
         // 4. DiagKit's own leftovers in this PC's temp folder (and the runtime copy older DiagKit versions extracted).
         string temp = Path.GetTempPath();
         DeleteFile(Path.Combine(temp, KitLayout.ErrorLog));
+        DeleteFile(Path.Combine(temp, KitLayout.CheckLog));
         DeleteDir(Path.Combine(temp, ".net", "DiagKit"), "the runtime files an older DiagKit unpacked");
         int leftovers = 0;
         foreach (string pattern in new[] { "diagkit-setup-*", "diagkit-fetch-*", "diagkit-build-*" })
