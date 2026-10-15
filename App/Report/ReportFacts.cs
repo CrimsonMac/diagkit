@@ -296,6 +296,11 @@ public static class ReportFacts
             list.Add(new Reading(Short(d.Model), $"{d.Temperature}", "°C", IsDiskHot(d) ? Severity.Warning : Severity.Ok));
         }
 
+        if (r.Reliability?.StabilityIndex is double stability)
+        {
+            list.Add(new Reading("Stability index", $"{stability:0.0}", "of 10", Severity.Ok));
+        }
+
         return list;
     }
 

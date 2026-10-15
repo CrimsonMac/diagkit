@@ -38,6 +38,7 @@ public sealed class DiagnosticReport
     public List<DiskInfo> Disks { get; set; } = new();
     public List<VolumeInfo> Volumes { get; set; } = new();
     public EventSummary? Events { get; set; }
+    public ReliabilitySummary? Reliability { get; set; }
     public List<CrashDump> CrashDumps { get; set; } = new();
     public bool CrashDumpsAnalyzed { get; set; }
     public AutorunSummary? Autoruns { get; set; }
@@ -177,6 +178,35 @@ public sealed class EventSummary
     public List<CountItem> AppCrashes { get; set; } = new();
     public List<CountItem> ServiceCrashes { get; set; } = new();
     public List<string> Errors { get; set; } = new();
+}
+
+/// <summary>
+/// What Windows' Reliability Monitor recorded that the event-log step does not already cover: programs that hung,
+/// updates and installs that failed, and the stability index Windows computes from all of it.
+/// </summary>
+public sealed class ReliabilitySummary
+{
+    public int WindowDays { get; set; } = 30;
+
+    /// <summary>Windows' own 1 to 10 score, newest value; null when Reliability Monitor has no data.</summary>
+    public double? StabilityIndex { get; set; }
+
+    public double? LowestStabilityIndex { get; set; }
+    public DateTime? LowestAt { get; set; }
+
+    /// <summary>Per program: Label is the exe, Extra its path.</summary>
+    public List<CountItem> AppHangs { get; set; } = new();
+
+    /// <summary>Windows updates whose last attempt failed and that have not installed since. Extra is the last error code.</summary>
+    public List<CountItem> FailedUpdates { get; set; } = new();
+
+    /// <summary>Microsoft Store app updates, kept apart because they usually fail only while the app is open.</summary>
+    public List<CountItem> FailedStoreUpdates { get; set; } = new();
+
+    /// <summary>Windows Installer (MSI) installs that ended with an error. Extra is the status code.</summary>
+    public List<CountItem> FailedInstalls { get; set; } = new();
+
+    public int RecordCount { get; set; }
 }
 
 public sealed class BugCheckEvent
