@@ -300,9 +300,27 @@ public sealed class BatteryInfo
     public long FullChargeCapacity { get; set; }
     public int? CycleCount { get; set; }
 
+    /// <summary>Where the capacities came from: "wmi", or "batteryreport" when the firmware only reports them there.</summary>
+    public string Source { get; set; } = "wmi";
+
+    /// <summary>Windows' estimate of active use on a full charge, now and when the battery was new (powercfg /batteryreport).</summary>
+    public int? RuntimeMinutes { get; set; }
+
+    public int? DesignRuntimeMinutes { get; set; }
+
+    /// <summary>Full-charge capacity over time, oldest first, since the battery was last replaced.</summary>
+    public List<BatteryCapacityPoint> History { get; set; } = new();
+
     public double WearPercent => DesignCapacity > 0
         ? Math.Max(0, 100.0 - FullChargeCapacity * 100.0 / DesignCapacity)
         : 0;
+}
+
+public sealed class BatteryCapacityPoint
+{
+    public DateTime Date { get; set; }
+    public long FullChargeCapacity { get; set; }
+    public long DesignCapacity { get; set; }
 }
 
 public sealed class NamedReading
