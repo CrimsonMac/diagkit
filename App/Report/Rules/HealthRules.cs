@@ -843,6 +843,29 @@ public static class HealthRules
             ev.Add($"{b.CycleCount} charge cycles");
         }
 
+        if (b.RuntimeMinutes is int run)
+        {
+            ev.Add($"Windows estimates about {TextUtil.Minutes(run)} of use on a full charge" +
+                   (b.DesignRuntimeMinutes is int whenNew && whenNew > run ? $" ({TextUtil.Minutes(whenNew)} when it was new)" : ""));
+        }
+
+        // The point closest to a year ago shows how fast it is wearing; the full history is in the raw report.
+        BatteryCapacityPoint? past = b.History.LastOrDefault(p => (r.CreatedAt - p.Date).TotalDays >= 365) ?? b.History.FirstOrDefault();
+        if (past != null && (r.CreatedAt - past.Date).TotalDays >= 60)
+        {
+            long design = past.DesignCapacity > 0 ? past.DesignCapacity : b.DesignCapacity;
+            ev.Add($"On {TextUtil.Date(past.Date)} it held {past.FullChargeCapacity:N0} mWh ({past.FullChargeCapacity * 100.0 / design:0}% of new)");
+        }
+
+        if (b.Source == "batteryreport")
+        {
+            ev.Add("Capacities from Windows' battery report, raw\\battery-report.xml (the firmware does not report them to WMI)");
+        }
+        else if (b.RuntimeMinutes != null || b.History.Count > 0)
+        {
+            ev.Add("Windows' battery report, with the full history: raw\\battery-report.xml");
+        }
+
         if (wear >= 40)
         {
             Add(f, Severity.Warning, "Battery", "battery-worn", $"Battery has lost {wear:0}% of its capacity",

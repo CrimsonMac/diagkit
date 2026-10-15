@@ -337,6 +337,9 @@ internal static class TextUtil
         return $"{(int)d.TotalDays} days ago";
     }
 
+    /// <summary>A length of time for people: "2 h 05 min", "45 min".</summary>
+    public static string Minutes(int minutes) => minutes >= 60 ? $"{minutes / 60} h {minutes % 60:00} min" : $"{minutes} min";
+
     public static string Date(DateTime? when) => when?.ToString("d MMM yyyy", CultureInfo.InvariantCulture) ?? "unknown";
 
     public static string DateTimeShort(DateTime? when) => when?.ToString("d MMM yyyy, HH:mm", CultureInfo.InvariantCulture) ?? "unknown";

@@ -100,7 +100,7 @@ Both run right on the Quick page, where the report then appears with **Back to q
 | Event logs (30 days) | WHEA, Kernel-Power 41, bug checks, disk/NTFS/NVMe errors, display driver resets, app and service crashes | nothing |
 | Crash dumps | BlueScreenView `/sxml` | BlueScreenView |
 | Devices | Device Manager problem codes | nothing |
-| Battery | WMI battery capacity | laptop |
+| Battery | WMI battery capacity, plus `powercfg /batteryreport` for Windows' runtime estimate, the capacity history and firmware that keeps capacities out of WMI | laptop |
 | Startup entries (optional) | `autorunsc64 -s -m` | autorunsc64.exe |
 | CPU load test (optional, 30 s or 2 min) | all-core vector load; temperature, clock and power sampled each second | nothing (clock falls back to perf counters) |
 
@@ -198,6 +198,8 @@ Also tested with non-elevated test builds:
 - setup: a new kit, an update, a GUI install with a tool unticked, an upgrade of a kit made by the old build script, and every fallback, by blocking the main hosts in a debug build;
 - Uninstall against a kit with planted traces, which removed exactly the kit's entries and kept the user's files and other programs' records. Prefetch decoding was round-trip tested.
 - on Windows 11 24H2, driven through UI Automation: setup's folder picker (browsing, making a new folder, handing it back to setup); switching the theme from dark to light while DiagKit runs, with the choice saved to `settings.json`; the Quick page, with the System and Windows quick action and a custom diagnosis of Memory and Devices, both producing scoped reports; the Back buttons on reports; and setup's Start menu shortcut, created with the right target and recorded in the kit, then removed again by unticking the option (the same code Uninstall calls).
+
+The battery report reader was tested against a real report from a desktop (no battery) and a made-up laptop report following the same format, including a battery swap in its history. It has not yet run on a laptop.
 
 Not yet exercised in a controlled test:
 - the PawnIO silent install and uninstall;
