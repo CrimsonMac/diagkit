@@ -76,6 +76,9 @@ public sealed class MainViewModel : ObservableObject
     public ICommand RunCheckCommand { get; }
     public ICommand UninstallCommand { get; }
 
+    /// <summary>A check asked for on the command line; run on its page once the tools are found.</summary>
+    public CheckArguments? StartupCheck { get; init; }
+
     /// <summary>Raised when DiagKit should close (Uninstall.exe was started and will clean up after it).</summary>
     public event Action? CloseRequested;
 
@@ -222,6 +225,36 @@ public sealed class MainViewModel : ObservableObject
         Page = Settings.StartPage;
         await load;
         _ = LeftoverCleanup.RunAsync();
+        if (StartupCheck is { } check)
+        {
+            await RunStartupCheckAsync(check);
+        }
+    }
+
+    private Task RunStartupCheckAsync(CheckArguments check)
+    {
+        if (check.Only == null)
+        {
+            Page = AppPage.Health;
+            return Health.RunAsync(new CheckRequest
+            {
+                StressSeconds = check.StressSeconds,
+                StartupScan = check.StartupScan,
+                InstallPawnIo = check.InstallPawnIo,
+            });
+        }
+
+        // A hand-picked set runs on the Quick page, like Custom diagnosis, and is named the same way.
+        Page = AppPage.Quick;
+        return Quick.Runner.RunAsync(new CheckRequest
+        {
+            Only = check.Only,
+            StressSeconds = check.StressSeconds,
+            StartupScan = check.StartupScan,
+            InstallPawnIo = check.InstallPawnIo && (check.Only.Contains(Report.CheckId.Sensors) || check.StressSeconds > 0),
+            Scope = check.Scope,
+            Title = $"Custom check of {Environment.MachineName}",
+        });
     }
 
     public async void ShowNotice(string text, LedState led)

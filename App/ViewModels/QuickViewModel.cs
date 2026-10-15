@@ -168,13 +168,7 @@ public sealed class QuickViewModel : ObservableObject
     private void StartCustom()
     {
         var only = new HashSet<CheckId>(Checks.Where(c => c.IsSelected).Select(c => c.Info.Id));
-        IEnumerable<string> names = Checks.Where(c => c.IsSelected).Select(c => c.Name);
-        if (_customStress > 0)
-        {
-            names = names.Append($"CPU load test ({(_customStress >= 60 ? _customStress / 60 + " min" : _customStress + " s")})");
-        }
-
-        Run(only, _customStress, "Custom check: " + string.Join(", ", names), $"Custom check of {Environment.MachineName}");
+        Run(only, _customStress, HealthChecks.CustomScope(only, _customStress), $"Custom check of {Environment.MachineName}");
     }
 
     private void Run(HashSet<CheckId> only, int stress, string scope, string title)

@@ -24,6 +24,9 @@ public static class KitLayout
     public const string ReportsFolder = "Reports";
     public const string ToolList = "tools.json";
     public const string ErrorLog = "diagkit-error.log";
+
+    /// <summary>Written by a check started with DiagKit.exe /check /quiet.</summary>
+    public const string CheckLog = "diagkit-check.log";
     public const string SettingsFile = "settings.json";
 
     /// <summary>Per-tool stamp file written by fetch-tools.ps1 before 1.1; marks a folder DiagKit downloaded.</summary>

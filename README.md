@@ -65,6 +65,7 @@ diagkit.1.1.2\
   Reports\<PC>_<date>\  report.html, report.json, raw\
   settings.json         DiagKit's settings, written once you change one
   .diagkit              hidden record of what DiagKit installed, for Uninstall.exe
+  diagkit-check.log     output of the last check started with /quiet
 ```
 
 ## Using it
@@ -107,6 +108,21 @@ Both run right on the Quick page, where the report then appears with **Back to q
 Steps in the same phase run in parallel, and each has its own timeout. A hung or failing step is marked as such and the rest of the report still completes. The report then opens on the same page, with **Back to the full check** at the top.
 
 The rules turn the data into findings, each with a severity, a plain explanation, **what to do**, and the evidence behind it. Thresholds are conservative and the wording is hedged where the data can't prove a cause. For example, `WHEA_UNCORRECTABLE_ERROR` dumps always name `ntoskrnl.exe`, so the report says the error came from the hardware rather than blaming the kernel. Clocks dropping on a laptop under load is described as power-limit behaviour unless temperatures are also high.
+
+**From the command line**, DiagKit can start a check by itself, with or without its window:
+
+```
+DiagKit.exe [/check full|step,step] [/stress <seconds>] [/nostartup] [/pawnio] [/quiet]
+  /check      run a check as DiagKit starts: full, or steps from drives, space, temps, memory, events,
+              dumps, devices, battery, startup
+  /stress     add the CPU load test, 10 to 600 seconds (on its own: just the load test)
+  /nostartup  leave the startup scan out of a full check
+  /pawnio     install the CPU temperature driver first if it is missing; never done without this switch
+  /quiet      no window; runs the full check unless /check says otherwise, writes diagkit-check.log next to
+              DiagKit.exe, and exits with 0 (nothing worth fixing), 1 (worth fixing), 2 (critical) or 3 (no report)
+```
+
+Without `/quiet` the window opens and the check runs on its page: the full check on Full check, a list of steps on Quick, named like a Custom diagnosis. The report is saved as usual. DiagKit asks for administrator rights either way, so a script started without them gets a UAC prompt; a scheduled task set to run with highest privileges does not. Settings' check defaults do not apply on the command line, so a script always gets the same check.
 
 **Reports** (Ctrl+4) lists saved checks; **Open** shows one right there, with **Back to reports** at the top. Only one check runs at a time, whichever page started it. Each report is a folder containing:
 - `report.html`: one self-contained file with no scripts or external assets, which works on a phone and follows light/dark mode. It's the one to send someone.
@@ -198,6 +214,8 @@ Also tested with non-elevated test builds:
 - setup: a new kit, an update, a GUI install with a tool unticked, an upgrade of a kit made by the old build script, and every fallback, by blocking the main hosts in a debug build;
 - Uninstall against a kit with planted traces, which removed exactly the kit's entries and kept the user's files and other programs' records. Prefetch decoding was round-trip tested.
 - on Windows 11 24H2, driven through UI Automation: setup's folder picker (browsing, making a new folder, handing it back to setup); switching the theme from dark to light while DiagKit runs, with the choice saved to `settings.json`; the Quick page, with the System and Windows quick action and a custom diagnosis of Memory and Devices, both producing scoped reports; the Back buttons on reports; and setup's Start menu shortcut, created with the right target and recorded in the kit, then removed again by unticking the option (the same code Uninstall calls).
+
+The command line was run on Windows 11 24H2 from an elevated shell with `/quiet`: an unknown step (exit 3, reason in the log), Memory and Devices (exit 0), the load test alone, and a full check without the startup scan (exit 1 for one warning), each with its report saved. Starting a check with the window open (without `/quiet`) has not been tried yet.
 
 Not yet exercised in a controlled test:
 - the PawnIO silent install and uninstall;

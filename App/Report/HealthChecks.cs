@@ -41,6 +41,21 @@ public static class HealthChecks
         new(CheckId.Startup, "Startup entries", "Unsigned or broken programs that start with Windows (20 to 60 s)"),
     };
 
+    /// <summary>
+    /// How a hand-picked set of checks is named on its report. Custom diagnosis and the command line use the same words,
+    /// so the same selection reads the same wherever it was started.
+    /// </summary>
+    public static string CustomScope(ICollection<CheckId> only, int stressSeconds)
+    {
+        IEnumerable<string> names = Selectable.Where(c => only.Contains(c.Id)).Select(c => c.Name);
+        if (stressSeconds > 0)
+        {
+            names = names.Append($"CPU load test ({(stressSeconds >= 60 && stressSeconds % 60 == 0 ? stressSeconds / 60 + " min" : stressSeconds + " s")})");
+        }
+
+        return "Custom check: " + string.Join(", ", names);
+    }
+
     public static string Name(CheckId id) => id switch
     {
         CheckId.System => "System overview",
