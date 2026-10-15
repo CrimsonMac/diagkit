@@ -130,6 +130,8 @@ Without `/quiet` the window opens and the check runs on its page: the full check
 - `report.json`: the full structured data.
 - `raw\`: every tool's original output.
 
+**Since the last check.** When the kit already holds a report for the same PC with the same scope (a full check against the last full check, a quick action against the last run of that quick action), the new report starts with what changed: new findings, findings that got worse or better, findings that are gone, and drive or battery readings that moved (reallocated, pending and uncorrectable sectors, media and CRC errors, SSD wear, battery capacity). PCs are matched by name and, where both reports have them, model and motherboard, so a different PC with the same name is not compared. If a step failed this time, nothing is called gone. The comparison is stored in `report.json` and shown in `report.html` as well.
+
 [`Examples/sample-report.html`](Examples/sample-report.html) shows what a report for a troubled PC looks like.
 
 **Settings** (Ctrl+, or the gear at the bottom of the rail):
@@ -215,6 +217,8 @@ Also tested with non-elevated test builds:
 - setup: a new kit, an update, a GUI install with a tool unticked, an upgrade of a kit made by the old build script, and every fallback, by blocking the main hosts in a debug build;
 - Uninstall against a kit with planted traces, which removed exactly the kit's entries and kept the user's files and other programs' records. Prefetch decoding was round-trip tested.
 - on Windows 11 24H2, driven through UI Automation: setup's folder picker (browsing, making a new folder, handing it back to setup); switching the theme from dark to light while DiagKit runs, with the choice saved to `settings.json`; the Quick page, with the System and Windows quick action and a custom diagnosis of Memory and Devices, both producing scoped reports; the Back buttons on reports; and setup's Start menu shortcut, created with the right target and recorded in the kit, then removed again by unticking the option (the same code Uninstall calls).
+
+The comparison with the previous report was tested through a test harness with made-up reports of one PC (a drive whose sector counts rose, findings that appeared, changed severity and went away, a step that failed) and of a different PC with the same name, which was skipped.
 
 The command line was run on Windows 11 24H2 from an elevated shell with `/quiet`: an unknown step (exit 3, reason in the log), Memory and Devices (exit 0), the load test alone, and a full check without the startup scan (exit 1 for one warning), each with its report saved. Starting a check with the window open (without `/quiet`) has not been tried yet.
 

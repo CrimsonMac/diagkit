@@ -48,7 +48,43 @@ public sealed class DiagnosticReport
     public SensorSnapshot? Sensors { get; set; }
     public StressResult? Stress { get; set; }
     public List<Finding> Findings { get; set; } = new();
+
+    /// <summary>What changed since the previous check of this PC with the same scope; null when there was none.</summary>
+    public ReportComparison? Comparison { get; set; }
+
     public List<CollectorRecord> Collectors { get; set; } = new();
+}
+
+public enum ChangeKind
+{
+    New,
+    Worse,
+    Counter,
+    Better,
+    Gone,
+}
+
+public sealed class ReportChange
+{
+    public ChangeKind Kind { get; set; }
+
+    /// <summary>How serious the item is now (Ok for something that is gone).</summary>
+    public Severity Severity { get; set; }
+
+    public string Text { get; set; } = "";
+}
+
+public sealed class ReportComparison
+{
+    public DateTime PreviousCreatedAt { get; set; }
+
+    /// <summary>The previous report's folder name, so it can be found in Reports.</summary>
+    public string PreviousFolder { get; set; } = "";
+
+    public List<ReportChange> Changes { get; set; } = new();
+
+    /// <summary>Set when findings missing this time cannot be called gone, because a step failed.</summary>
+    public string? Note { get; set; }
 }
 
 public sealed class CollectorRecord

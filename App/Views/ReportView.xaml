@@ -58,6 +58,32 @@
                 <TextBlock Text="{Binding StampText}" Style="{StaticResource Text.Faint}" VerticalAlignment="Center" Margin="8,0,0,8" />
             </WrapPanel>
 
+            <!-- What changed since the previous check of this PC -->
+            <StackPanel Visibility="{Binding HasComparison, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Since the last check" Style="{StaticResource Text.Section}" />
+                <TextBlock Text="{Binding ComparisonSummary}" Style="{StaticResource Text.Muted}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                <ItemsControl ItemsSource="{Binding Changes}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ChangeRow}">
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="26" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ctl:Led State="{Binding Led}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Kind}" FontFamily="{StaticResource Font.Display}" FontWeight="SemiBold" Foreground="{DynamicResource Muted}" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Text}" TextWrapping="Wrap" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding ComparisonNote}" Style="{StaticResource Text.Faint}" TextWrapping="Wrap" Margin="0,8,0,0"
+                           Visibility="{Binding ComparisonNote, Converter={StaticResource NotEmptyToVis}}" />
+            </StackPanel>
+
             <!-- Findings -->
             <DockPanel Margin="0,26,0,12">
                 <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding ExpandAllCommand}" Content="Expand or collapse all" />
