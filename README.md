@@ -18,7 +18,7 @@ One small exe, the tools next to it, and reports that travel with the stick. Whe
 
 - **One-click setup.** setup.exe downloads every tool from its publisher, checks each file against a published hash or signature, and builds or updates a kit on a USB stick or in any folder.
 - **Tool launcher.** Searchable tiles for HWiNFO64, CPU-Z, GPU-Z, CrystalDiskInfo, Sysinternals, NirSoft utilities, TestMem5, Prime95 and more. See [TOOLS.md](TOOLS.md) for the full list.
-- **Health check.** Drive health, WHEA errors, unexpected shutdowns, bug checks, crash dumps, device problems, battery wear, temperatures and an optional CPU load test. Each finding comes with a plain explanation, what to do about it, and the evidence behind it.
+- **Health check.** Drive health, WHEA errors, unexpected shutdowns, bug checks, crash dumps, programs that hang, failed updates, device problems, battery wear, temperatures and an optional CPU load test. Each finding comes with a plain explanation, what to do about it, and the evidence behind it.
 - **Quick actions.** One click checks just the drives, temperatures, crashes, memory, devices, battery or startup programs, or runs a CPU load test; Custom diagnosis runs the checks you tick as one report.
 - **Light and dark.** Follows Windows' app mode, or stays dark or light, set in Settings.
 - **Shareable reports.** A self-contained HTML file that works on a phone, plus the full JSON and every tool's raw output.
@@ -83,7 +83,7 @@ diagkit.1.1.2\
 - To add your own tools, edit `Tools\tools.json`; see [TOOLS.md](TOOLS.md#adding-your-own-tools).
 
 **Quick** (Ctrl+2) runs part of the health check when you only want to see one thing:
-- **Quick actions**: Drive health (drive health and free space), Temperatures, CPU load test (30 s or 2 min), Crashes and hardware errors (event logs and crash dumps), Memory, Devices, Battery, Startup programs, and System and Windows.
+- **Quick actions**: Drive health (drive health and free space), Temperatures, CPU load test (30 s or 2 min), Crashes and hardware errors (event logs, Reliability Monitor and crash dumps), Memory, Devices, Battery, Startup programs, and System and Windows.
 - **Custom diagnosis**: tick any of the health-check steps below, optionally add the load test, and run them together.
 
 Both run right on the Quick page, where the report then appears with **Back to quick actions** at the top. Each saves a normal report, marked with what it covered ("Quick check: Drive health"); the verdict then speaks only for the parts that were checked. The system overview is always included so the report names the PC, and the load test brings the temperature step along because it reads temperatures through it.
@@ -99,6 +99,7 @@ Both run right on the Quick page, where the report then appears with **Back to q
 | Free space | .NET | nothing |
 | Drive health | Windows storage WMI + smartctl JSON | smartctl for full SMART |
 | Event logs (30 days) | WHEA, Kernel-Power 41, bug checks, disk/NTFS/NVMe errors, display driver resets, app and service crashes | nothing |
+| Reliability history (30 days) | Reliability Monitor (WMI): programs that hung, Windows and Store updates that failed and have not installed since, failed MSI installs, the stability index | nothing (the report says so when Reliability Monitor has no data) |
 | Crash dumps | BlueScreenView `/sxml` | BlueScreenView |
 | Devices | Device Manager problem codes | nothing |
 | Battery | WMI battery capacity | laptop |
@@ -114,7 +115,7 @@ The rules turn the data into findings, each with a severity, a plain explanation
 ```
 DiagKit.exe [/check full|step,step] [/stress <seconds>] [/nostartup] [/pawnio] [/quiet]
   /check      run a check as DiagKit starts: full, or steps from drives, space, temps, memory, events,
-              dumps, devices, battery, startup
+              reliability, dumps, devices, battery, startup
   /stress     add the CPU load test, 10 to 600 seconds (on its own: just the load test)
   /nostartup  leave the startup scan out of a full check
   /pawnio     install the CPU temperature driver first if it is missing; never done without this switch
@@ -216,6 +217,8 @@ Also tested with non-elevated test builds:
 - on Windows 11 24H2, driven through UI Automation: setup's folder picker (browsing, making a new folder, handing it back to setup); switching the theme from dark to light while DiagKit runs, with the choice saved to `settings.json`; the Quick page, with the System and Windows quick action and a custom diagnosis of Memory and Devices, both producing scoped reports; the Back buttons on reports; and setup's Start menu shortcut, created with the right target and recorded in the kit, then removed again by unticking the option (the same code Uninstall calls).
 
 The command line was run on Windows 11 24H2 from an elevated shell with `/quiet`: an unknown step (exit 3, reason in the log), Memory and Devices (exit 0), the load test alone, and a full check without the startup scan (exit 1 for one warning), each with its report saved. Starting a check with the window open (without `/quiet`) has not been tried yet.
+
+The Reliability history step was run through a test harness (the step and the rules, without the window) on Windows 11 24H2 against that PC's own history: two Store apps whose updates failed repeatedly were reported, a single hang stayed below the threshold, and the stability index was read. No Windows update or MSI install had failed on that PC, so those findings have not been seen on real data.
 
 Not yet exercised in a controlled test:
 - the PawnIO silent install and uninstall;

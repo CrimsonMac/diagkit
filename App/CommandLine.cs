@@ -29,6 +29,7 @@ public sealed class CheckArguments
         ["temps"] = CheckId.Sensors,
         ["memory"] = CheckId.Memory,
         ["events"] = CheckId.Events,
+        ["reliability"] = CheckId.Reliability,
         ["dumps"] = CheckId.CrashDumps,
         ["devices"] = CheckId.Devices,
         ["battery"] = CheckId.Battery,
