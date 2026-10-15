@@ -65,6 +65,11 @@ public static class ReportRunner
             collectors.Add(new EventLogCollector());
         }
 
+        if (Want(CheckId.Reliability))
+        {
+            collectors.Add(new ReliabilityCollector());
+        }
+
         if (Want(CheckId.CrashDumps))
         {
             collectors.Add(new CrashDumpCollector());
