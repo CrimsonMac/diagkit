@@ -55,6 +55,30 @@ public static class HtmlReportWriter
             .Append(" in ").Append(r.DurationSeconds.ToString("0")).Append(" s with DiagKit ").Append(H(r.AppVersion)).Append("</p>\n");
         sb.Append("</div>\n</header>\n<main class=\"wrap\">\n");
 
+        // What changed since the previous check, for a second visit or a check after a repair.
+        if (r.Comparison is { } cmp)
+        {
+            sb.Append("<section class=\"changes\">\n<h2>Since the last check</h2>\n<p class=\"lede\">").Append(H(ReportComparer.Summary(cmp))).Append("</p>\n");
+            if (cmp.Changes.Count > 0)
+            {
+                sb.Append("<ul>");
+                foreach (ReportChange c in cmp.Changes)
+                {
+                    sb.Append("<li><span class=\"led\" data-sev=\"").Append(Sev(c.Severity)).Append("\"></span><b>").Append(H(ReportComparer.KindLabel(c.Kind)))
+                        .Append("</b><span>").Append(H(c.Text)).Append("</span></li>");
+                }
+
+                sb.Append("</ul>\n");
+            }
+
+            if (cmp.Note != null)
+            {
+                sb.Append("<p class=\"note\">").Append(H(cmp.Note)).Append("</p>\n");
+            }
+
+            sb.Append("</section>\n");
+        }
+
         // Findings
         sb.Append("<section class=\"findings\">\n<h2>Findings</h2>\n");
         foreach (Finding f in r.Findings)
@@ -211,6 +235,13 @@ code { font-size: 0.92em; background: var(--raised); padding: 1px 5px; border-ra
 .evidence li { padding: 3px 0; overflow-wrap: anywhere; }
 .evidence li + li { border-top: 1px solid var(--line); }
 .empty { color: var(--muted); }
+
+.changes .lede { margin: 0 0 12px; }
+.changes ul { margin: 0; padding: 4px 16px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.changes li { display: flex; align-items: baseline; padding: 8px 0; overflow-wrap: anywhere; }
+.changes li + li { border-top: 1px solid var(--line); }
+.changes li b { flex: none; width: 76px; font-family: var(--display); font-weight: 600; font-size: 13px; color: var(--muted); }
+.changes .note { margin: 10px 0 0; }
 
 .readings { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1px; background: var(--line);
   border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
