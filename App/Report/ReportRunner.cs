@@ -160,6 +160,7 @@ public static class ReportRunner
         report.Collectors = steps.Select(s => records.FirstOrDefault(r => r.Name == s.Collector.Name))
             .Where(r => r != null).Select(r => r!).ToList();
         report.DurationSeconds = Math.Round(total.Elapsed.TotalSeconds, 1);
+        ReportComparer.Attach(report, folder);
 
         string? html = null;
         string? saveError = null;

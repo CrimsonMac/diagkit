@@ -57,6 +57,8 @@ public sealed record DriveRowViewModel(DriveRow Row, LedState Led);
 
 public sealed record ReadingViewModel(Reading Reading, LedState Led);
 
+public sealed record ChangeRow(LedState Led, string Kind, string Text);
+
 public sealed class ReportViewModel : ObservableObject
 {
     public ReportViewModel(DiagnosticReport report, string folder, string? htmlPath, Action<string, LedState> notify, bool fromHistory = false)
@@ -86,6 +88,13 @@ public sealed class ReportViewModel : ObservableObject
         Overview = ReportFacts.Overview(report);
         Drives = ReportFacts.Drives(report).Select(d => new DriveRowViewModel(d, LedMap.From(d.Severity))).ToList();
         Readings = ReportFacts.Readings(report).Select(r => new ReadingViewModel(r, LedMap.From(r.Severity))).ToList();
+        if (report.Comparison is { } cmp)
+        {
+            ComparisonSummary = ReportComparer.Summary(cmp);
+            ComparisonNote = cmp.Note;
+            Changes = cmp.Changes.Select(c => new ChangeRow(LedMap.From(c.Severity), ReportComparer.KindLabel(c.Kind), c.Text)).ToList();
+        }
+
         Collectors = report.Collectors.Select(c => new LedRow(
             c.Status switch { "ok" => LedState.Ok, "partial" => LedState.Warning, _ => LedState.Critical },
             c.Name, c.Message ?? "", $"{c.Seconds:0.0} s")).ToList();
@@ -127,6 +136,13 @@ public sealed class ReportViewModel : ObservableObject
     public List<DriveRowViewModel> Drives { get; }
     public List<ReadingViewModel> Readings { get; }
     public List<LedRow> Collectors { get; }
+
+    /// <summary>What changed since the previous check of this PC; empty when there was no earlier report to compare with.</summary>
+    public List<ChangeRow> Changes { get; } = new();
+
+    public string? ComparisonSummary { get; }
+    public string? ComparisonNote { get; }
+    public bool HasComparison => ComparisonSummary != null;
     public bool HasDrives => Drives.Count > 0;
     public bool HasReadings => Readings.Count > 0;
     public bool HasFindings => Findings.Count > 0;
