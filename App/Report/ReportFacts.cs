@@ -301,6 +301,11 @@ public static class ReportFacts
             list.Add(new Reading("Battery, full charge", $"{runtime / 60.0:0.0}", "h", Severity.Ok));
         }
 
+        if (r.Reliability?.StabilityIndex is double stability)
+        {
+            list.Add(new Reading("Stability index", $"{stability:0.0}", "of 10", Severity.Ok));
+        }
+
         return list;
     }
 

@@ -35,6 +35,7 @@ public static class HealthRules
         Battery(r, f);
         Startup(r, f);
         Programs(r, f);
+        Reliability(r, f);
 
         return f.OrderByDescending(x => x.Severity)
             .ThenBy(x => Array.IndexOf(CategoryOrder, x.Category) is int i && i >= 0 ? i : 99)
@@ -956,6 +957,68 @@ public static class HealthRules
             Add(f, Severity.Info, "Programs", "service-crashes", "Background services that stopped unexpectedly",
                 "Windows services that crashed more than once. Often from third-party software.",
                 null, services.Select(s => $"{s.Label}: {s.Count} times, last {TextUtil.Date(s.LastSeen)}"));
+        }
+    }
+
+    private static void Reliability(DiagnosticReport r, List<Finding> f)
+    {
+        ReliabilitySummary? rel = r.Reliability;
+        if (rel == null || (rel.StabilityIndex == null && rel.RecordCount == 0))
+        {
+            return;
+        }
+
+        int before = f.Count;
+        string Tries(CountItem x) => x.Count == 1 ? "failed once" : $"failed {x.Count} times";
+
+        if (rel.FailedUpdates.Count > 0)
+        {
+            int n = rel.FailedUpdates.Count;
+            Add(f, rel.FailedUpdates.Any(x => x.Count >= 2) ? Severity.Warning : Severity.Info, "Windows", "updates-failing",
+                n == 1 ? "A Windows update failed and has not installed since" : $"{n} Windows updates failed and have not installed since",
+                "Windows Update tried to install " + (n == 1 ? "it" : "these") + " and failed. Until " + (n == 1 ? "it installs" : "they install") +
+                ", the fixes in " + (n == 1 ? "it" : "them") + ", security fixes included, are missing from this PC.",
+                "Run Windows Update again. If it fails again, run the Windows Update troubleshooter (Settings > System > Troubleshoot), then 'DISM /Online /Cleanup-Image /RestoreHealth' and 'sfc /scannow'. Searching the error code usually names the cause.",
+                rel.FailedUpdates.Take(10).Select(x => $"{x.Label}: {Tries(x)}, last {TextUtil.Date(x.LastSeen)}" + (x.Extra != null ? $", error {x.Extra}" : "")));
+        }
+
+        // A single failed Store update usually just means the app was open at the time.
+        var store = rel.FailedStoreUpdates.Where(x => x.Count >= 2).ToList();
+        if (store.Count > 0)
+        {
+            Add(f, Severity.Info, "Programs", "store-updates-failing", "Microsoft Store apps that keep failing to update",
+                "The Store tried to update these apps several times and they have not updated since. Error 0x80073d02 means the app was open each time, which is harmless; other codes point at a problem with the Store itself.",
+                "Close the app, then update it from the Library page in the Microsoft Store.",
+                store.Take(8).Select(x => $"{x.Label}: {Tries(x)}, last {TextUtil.Date(x.LastSeen)}" + (x.Extra != null ? $", error {x.Extra}" : "")));
+        }
+
+        var hangs = rel.AppHangs
+            .Where(a => a.Count >= 3 && !OwnExeNames.Contains(a.Label, StringComparer.OrdinalIgnoreCase))
+            .Take(8).ToList();
+        if (hangs.Count > 0)
+        {
+            bool shell = hangs.Any(a => a.Label.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase));
+            Add(f, shell ? Severity.Warning : Severity.Info, "Programs", "app-hangs", "Programs that keep freezing",
+                (shell ? "Explorer, which runs the taskbar and desktop, stopped responding several times. Shell extensions, a slow or failing drive, or a network drive that went away are the usual causes."
+                       : "These programs stopped responding and were closed or recovered several times. One program hanging now and then is normal; repeated hangs point at that program, its add-ons, or a slow drive it works from."),
+                shell ? "Check the drive health above, and look for shell extensions in Autoruns (its Explorer tab)." : null,
+                hangs.Select(a => $"{a.Label}: froze {TextUtil.Plural(a.Count, "time")}, last {TextUtil.Date(a.LastSeen)}"));
+        }
+
+        if (rel.FailedInstalls.Count > 0)
+        {
+            int n = rel.FailedInstalls.Sum(x => x.Count);
+            Add(f, Severity.Info, "Programs", "installs-failed", n == 1 ? "A program install failed" : $"{n} program installs failed",
+                "Windows Installer reported these installs or updates as failed. A failed update can leave a program in a half-updated state.",
+                "Run the installer again. Error 1603 is a general failure; the installer's own log usually names the cause.",
+                rel.FailedInstalls.Take(10).Select(x => $"{x.Label}: error {x.Extra}, " + (x.Count > 1 ? $"{x.Count} times, last " : "") + TextUtil.Date(x.LastSeen)));
+        }
+
+        if (f.Count == before)
+        {
+            Add(f, Severity.Ok, "Programs", "reliability-ok", "No hangs or failed updates in Reliability Monitor",
+                $"Nothing froze repeatedly and no update or install is still failing in the last {rel.WindowDays} days.",
+                null, rel.StabilityIndex is double i ? new[] { $"Windows' stability index: {i:0.0} of 10" } : null);
         }
     }
 }
