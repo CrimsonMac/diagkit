@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,14 +16,14 @@ namespace DiagKit;
 public static class Program
 {
     [STAThread]
-    public static int Main()
+    public static int Main(string[] args)
     {
         // Must be in place before any type from a referenced library is touched.
         AppDomain.CurrentDomain.AssemblyResolve += ResolveEmbedded;
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Report("DiagKit crashed", e.ExceptionObject as Exception);
         try
         {
-            return Run();
+            return Run(args);
         }
         catch (Exception ex)
         {
@@ -33,9 +34,33 @@ public static class Program
 
     // Separate method so the JIT only resolves App (and everything it references) after the resolver is hooked up.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int Run()
+    private static int Run(string[] args)
     {
-        var app = new App();
+        CheckArguments? check;
+        try
+        {
+            check = CheckArguments.Parse(args);
+        }
+        catch (ArgumentException ex)
+        {
+            if (args.Any(a => string.Equals(a.TrimStart('/', '-'), "quiet", StringComparison.OrdinalIgnoreCase)))
+            {
+                QuietCheck.WriteError(ex.Message);
+            }
+            else
+            {
+                MessageBoxW(IntPtr.Zero, ex.Message, "DiagKit", 0x30 /* MB_ICONWARNING */);
+            }
+
+            return 3;
+        }
+
+        if (check is { Quiet: true })
+        {
+            return QuietCheck.Run(check);
+        }
+
+        var app = new App { StartupCheck = check };
         app.InitializeComponent();
         return app.Run();
     }
