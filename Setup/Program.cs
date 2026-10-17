@@ -107,7 +107,7 @@ public static class Locations
     /// </summary>
     public static string DefaultParent()
     {
-        string here = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+        string here = FullPath(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\'));
         if (IsRemovable(here))
         {
             return here;
@@ -116,6 +116,14 @@ public static class Locations
         DriveInfo? usb = Removable().FirstOrDefault();
         return usb?.RootDirectory.FullName ?? here;
     }
+
+    /// <summary>
+    /// The full path of a folder, with a bare drive letter ("E:") read as the top of that drive. Windows takes "E:" to
+    /// mean the current folder on E:, so setup.exe at the top of a USB stick but started from elsewhere on it would
+    /// otherwise open the picker, and put the kit, in that folder instead.
+    /// </summary>
+    public static string FullPath(string path)
+        => Path.GetFullPath(path.Length == 2 && path[1] == ':' ? path + "\\" : path);
 
     public static IEnumerable<DriveInfo> Removable()
     {

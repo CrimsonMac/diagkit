@@ -32,7 +32,7 @@ public sealed class KitTarget
     /// </summary>
     public static KitTarget For(string picked)
     {
-        string dir = Path.GetFullPath(picked).TrimEnd('\\');
+        string dir = Locations.FullPath(picked).TrimEnd('\\');
         if (dir.Length == 2 && dir[1] == ':')
         {
             dir += "\\";

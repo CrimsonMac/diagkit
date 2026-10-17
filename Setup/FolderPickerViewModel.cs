@@ -295,7 +295,7 @@ public sealed class FolderPickerViewModel : ObservableObject
         string full;
         try
         {
-            full = Path.GetFullPath(Environment.ExpandEnvironmentVariables(path));
+            full = Locations.FullPath(Environment.ExpandEnvironmentVariables(path));
         }
         catch (Exception ex)
         {
@@ -308,11 +308,6 @@ public sealed class FolderPickerViewModel : ObservableObject
             Error = $"{full} does not exist. Check the path, or go to its parent and create it with New folder.";
             PathText = _currentPath;
             return;
-        }
-
-        if (full.Length == 2 && full[1] == ':')
-        {
-            full += "\\";
         }
 
         IsCreating = false;
