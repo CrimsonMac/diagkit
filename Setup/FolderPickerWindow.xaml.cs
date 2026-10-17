@@ -16,7 +16,11 @@ public partial class FolderPickerWindow : Window
         DataContext = _vm;
         DarkTitleBar.Apply(this);
         _vm.PropertyChanged += OnViewModelChanged;
-        Loaded += (_, _) => FolderList.Focus();
+        Loaded += (_, _) =>
+        {
+            _vm.Start();
+            FolderList.Focus();
+        };
     }
 
     /// <summary>The folder the user picked; set when the dialog returns true.</summary>
