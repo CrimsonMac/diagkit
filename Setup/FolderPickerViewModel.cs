@@ -76,6 +76,7 @@ public sealed class FolderPickerViewModel : ObservableObject
 
     private readonly RelayCommand _upCommand;
     private readonly RelayCommand _createCommand;
+    private readonly string _start;
     private string _currentPath = "";
     private string _pathText = "";
     private List<FolderItem> _folders = new();
@@ -86,9 +87,12 @@ public sealed class FolderPickerViewModel : ObservableObject
     private string _newFolderName = "";
     private string _newFolderError = "";
     private int _loadVersion;
+    private bool _started;
+    private bool _syncingPlace;
 
     public FolderPickerViewModel(string start)
     {
+        _start = start;
         Places = DriveInfo.GetDrives().Where(IsUsable).Select(d => new PlaceItem(d))
             .OrderByDescending(p => p.IsRemovable).ThenBy(p => p.Root, StringComparer.OrdinalIgnoreCase).ToList();
         _upCommand = new RelayCommand(() => Navigate(Parent(_currentPath)!), () => Parent(_currentPath) != null);
@@ -108,7 +112,21 @@ public sealed class FolderPickerViewModel : ObservableObject
             IsCreating = true;
         });
         CancelCreateCommand = new RelayCommand(() => IsCreating = false);
-        Navigate(Directory.Exists(start) ? start : Places.FirstOrDefault()?.Root ?? Path.GetPathRoot(Environment.SystemDirectory)!);
+    }
+
+    /// <summary>
+    /// Opens the start folder. Called once the window has loaded, so the first listing is not overtaken by a load
+    /// that the bindings start while the window is still being set up.
+    /// </summary>
+    public void Start()
+    {
+        if (_started)
+        {
+            return;
+        }
+
+        _started = true;
+        Navigate(Directory.Exists(_start) ? _start : Places.FirstOrDefault()?.Root ?? Path.GetPathRoot(Environment.SystemDirectory)!);
     }
 
     public ICommand UpCommand => _upCommand;
@@ -161,12 +179,15 @@ public sealed class FolderPickerViewModel : ObservableObject
         }
     }
 
+    /// <summary>The drive holding the current folder; only the user picking a drive navigates to it.</summary>
     public PlaceItem? SelectedPlace
     {
         get => _selectedPlace;
         set
         {
-            if (SetProperty(ref _selectedPlace, value) && value != null && !IsSameFolder(value.Root, _currentPath))
+            // The list's two-way binding writes back while the window is set up and when Navigate moves the
+            // highlight; those writes must not start a load that makes the real one stale.
+            if (SetProperty(ref _selectedPlace, value) && _started && !_syncingPlace && value != null && !IsSameFolder(value.Root, _currentPath))
             {
                 Navigate(value.Root);
             }
@@ -298,7 +319,16 @@ public sealed class FolderPickerViewModel : ObservableObject
         CurrentPath = full;
         PathText = full;
         _selectedPlace = Places.FirstOrDefault(p => full.StartsWith(p.Root, StringComparison.OrdinalIgnoreCase));
-        OnPropertyChanged(nameof(SelectedPlace));
+        _syncingPlace = true;
+        try
+        {
+            OnPropertyChanged(nameof(SelectedPlace));
+        }
+        finally
+        {
+            _syncingPlace = false;
+        }
+
         _upCommand.RaiseCanExecuteChanged();
         _ = LoadAsync(full, null);
     }
